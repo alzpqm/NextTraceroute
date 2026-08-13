@@ -28,7 +28,7 @@ extensions.configure<ApplicationExtension> {
         create("release") {
             keyAlias = System.getenv("RELEASE_KEYSTORE_ALIAS")
             keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
-            storeFile = file("../keystore.jks")
+            storeFile = file(System.getenv("RELEASE_KEYSTORE_PATH") ?: "../keystore.jks")
             storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
         }
     }
@@ -39,16 +39,14 @@ extensions.configure<ApplicationExtension> {
 //        includeInBundle = false
     }
     namespace = "com.surfaceocean.nexttraceroute"
-    //noinspection GradleDependency
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.surfaceocean.nexttraceroute"
-        minSdk = 23
-        //noinspection OldTargetApi
-        targetSdk = 36
-        versionCode = 17
-        versionName = "0.1.6-pre.1"
+        minSdk = 26
+        targetSdk = 37
+        versionCode = 18
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -115,7 +113,7 @@ dependencies {
 //    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.lifecycle.livedata.ktx)
-//    testImplementation(libs.junit)
+    testImplementation(libs.junit)
 //    androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

@@ -189,10 +189,16 @@ class MainActivity : ComponentActivity() {
                     val lastBackPress = remember { mutableLongStateOf(0L) }
                     val listState = rememberLazyListState()
                     val isScrollToFirstLineTriggered = remember { mutableStateOf(false) }
-                    val db = Room.databaseBuilder(
-                        context,
-                        AppDatabase::class.java, "app-database"
-                    ).build()
+                    val db = remember(context.applicationContext) {
+                        Room.databaseBuilder(
+                            context.applicationContext,
+                            AppDatabase::class.java,
+                            "app-database"
+                        ).build()
+                    }
+                    DisposableEffect(db) {
+                        onDispose { db.close() }
+                    }
                     val historyDao = db.historyDao()
 
                     //load settings from file
@@ -209,44 +215,58 @@ class MainActivity : ComponentActivity() {
                                     val mapType = object : TypeToken<Map<String, Any>>() {}.type
                                     val settingsMap: Map<String, Any> =
                                         gson.fromJson(jsonString, mapType)
-                                    currentLanguage.value = settingsMap["currentLanguage"] as String
-                                    isTraceMapEnabled.value =
-                                        settingsMap["isTraceMapEnabled"] as Boolean
-                                    maxTraceTTL.intValue =
-                                        (settingsMap["maxTraceTTL"] as String).toInt()
-                                    traceTimeout.value = settingsMap["traceTimeout"] as String
-                                    traceCount.value = settingsMap["traceCount"] as String
-                                    currentDNSMode.value = settingsMap["currentDNSMode"] as String
-                                    tracerouteDNSServer.value =
-                                        settingsMap["tracerouteDNSServer"] as String
-                                    currentDOHServer.value =
-                                        settingsMap["currentDOHServer"] as String
-                                    apiHostNamePOW.value = settingsMap["apiHostNamePOW"] as String
-                                    apiDNSNamePOW.value = settingsMap["apiDNSNamePOW"] as String
-                                    apiHostName.value = settingsMap["apiHostName"] as String
-                                    apiDNSName.value = settingsMap["apiDNSName"] as String
-                                    borderColor.value =
-                                        Color((settingsMap["borderColor"] as Double).toInt())
-                                    disabledContentColor.value =
-                                        Color((settingsMap["disabledContentColor"] as Double).toInt())
-                                    backgroundColor.value =
-                                        Color((settingsMap["backgroundColor"] as Double).toInt())
-                                    genericTextColor.value =
-                                        Color((settingsMap["genericTextColor"] as Double).toInt())
-                                    navigationIconColor.value =
-                                        Color((settingsMap["navigationIconColor"] as Double).toInt())
-                                    buttonEnabledColor.value =
-                                        Color((settingsMap["buttonEnabledColor"] as Double).toInt())
-                                    buttonDisabledColor.value =
-                                        Color((settingsMap["buttonDisabledColor"] as Double).toInt())
-                                    buttonTextColor.value =
-                                        Color((settingsMap["buttonTextColor"] as Double).toInt())
-                                    resultSNColor.value =
-                                        Color((settingsMap["resultSNColor"] as Double).toInt())
-                                    resultASColor.value =
-                                        Color((settingsMap["resultASColor"] as Double).toInt())
-                                    resultPingColor.value =
-                                        Color((settingsMap["resultPingColor"] as Double).toInt())
+                                    (settingsMap["currentLanguage"] as? String)?.let {
+                                        currentLanguage.value = it
+                                    }
+                                    (settingsMap["isTraceMapEnabled"] as? Boolean)?.let {
+                                        isTraceMapEnabled.value = it
+                                    }
+                                    settingsMap["maxTraceTTL"]?.toString()?.toDoubleOrNull()?.toInt()
+                                        ?.takeIf { it in 1..255 }
+                                        ?.let { maxTraceTTL.intValue = it }
+                                    (settingsMap["traceTimeout"] as? String)?.let {
+                                        traceTimeout.value = it
+                                    }
+                                    (settingsMap["traceCount"] as? String)?.let {
+                                        traceCount.value = it
+                                    }
+                                    (settingsMap["currentDNSMode"] as? String)?.let {
+                                        currentDNSMode.value = it
+                                    }
+                                    (settingsMap["tracerouteDNSServer"] as? String)?.let {
+                                        tracerouteDNSServer.value = it
+                                    }
+                                    (settingsMap["currentDOHServer"] as? String)?.let {
+                                        currentDOHServer.value = it
+                                    }
+                                    (settingsMap["apiHostNamePOW"] as? String)?.let {
+                                        apiHostNamePOW.value = it
+                                    }
+                                    (settingsMap["apiDNSNamePOW"] as? String)?.let {
+                                        apiDNSNamePOW.value = it
+                                    }
+                                    (settingsMap["apiHostName"] as? String)?.let {
+                                        apiHostName.value = it
+                                    }
+                                    (settingsMap["apiDNSName"] as? String)?.let {
+                                        apiDNSName.value = it
+                                    }
+                                    fun restoreColor(key: String, target: MutableState<Color>) {
+                                        (settingsMap[key] as? Number)?.toInt()?.let {
+                                            target.value = Color(it)
+                                        }
+                                    }
+                                    restoreColor("borderColor", borderColor)
+                                    restoreColor("disabledContentColor", disabledContentColor)
+                                    restoreColor("backgroundColor", backgroundColor)
+                                    restoreColor("genericTextColor", genericTextColor)
+                                    restoreColor("navigationIconColor", navigationIconColor)
+                                    restoreColor("buttonEnabledColor", buttonEnabledColor)
+                                    restoreColor("buttonDisabledColor", buttonDisabledColor)
+                                    restoreColor("buttonTextColor", buttonTextColor)
+                                    restoreColor("resultSNColor", resultSNColor)
+                                    restoreColor("resultASColor", resultASColor)
+                                    restoreColor("resultPingColor", resultPingColor)
                                 }
 
                             }
@@ -267,7 +287,6 @@ class MainActivity : ComponentActivity() {
 
                     BackHandler {
                         if (System.currentTimeMillis() - lastBackPress.longValue < 2000) {
-                            db.close()
                             (context as? Activity)?.finish()
                         } else {
                             Toast.makeText(
@@ -590,6 +609,7 @@ fun CheckThreadsStatus(
     currentDomain: MutableState<String>,
     searchText: MutableState<String>,
     copyHistory: MutableState<String>,
+    gridDataList: List<List<List<MutableState<String>>>>,
     historyDao: HistoryDao,
     db: AppDatabase
 ) {
@@ -607,20 +627,51 @@ fun CheckThreadsStatus(
             }
             if (multipleIps.isEmpty()) {
                 isSearchBarEnabled.value = true
-                //Add history after all threads are finished
-                val historyData = HistoryData(
-                    ip = searchText.value,
-                    domain = currentDomain.value,
-                    history = copyHistory.value
+                val historyText = buildTraceHistory(
+                    searchText = searchText.value,
+                    currentDomain = currentDomain.value,
+                    gridDataList = gridDataList
                 )
-                db.withTransaction {
-                    historyDao.insertHistory(historyData)
+                copyHistory.value = historyText
+                if (historyText.isNotBlank()) {
+                    val historyData = HistoryData(
+                        ip = searchText.value,
+                        domain = currentDomain.value,
+                        history = historyText
+                    )
+                    db.withTransaction {
+                        historyDao.insertHistory(historyData)
+                    }
                 }
                 currentDomain.value = ""
             }
         }
     }
 
+}
+
+fun buildTraceHistory(
+    searchText: String,
+    currentDomain: String,
+    gridDataList: List<List<List<MutableState<String>>>>
+): String {
+    val resultRows = gridDataList.mapNotNull { layer ->
+        if (layer.firstOrNull()?.firstOrNull()?.value.isNullOrBlank()) {
+            null
+        } else {
+            layer.joinToString(separator = "\n") { row ->
+                row.joinToString(separator = ", ") { cell -> cell.value }
+            }
+        }
+    }
+    if (resultRows.isEmpty()) return ""
+
+    return buildString {
+        appendLine("Traceroute Result:")
+        appendLine("IP:$searchText")
+        appendLine("Domain:$currentDomain")
+        append(resultRows.joinToString(separator = "\n"))
+    }.trim()
 }
 
 
@@ -760,6 +811,47 @@ fun MainColumn(
         testText.value = "Trace stopped."
     }
 
+    LaunchedEffect(isButtonClicked.value) {
+        if (!isButtonClicked.value) return@LaunchedEffect
+
+        val normalizedTarget = normalizeTargetInput(searchText.value)
+        if (trHandler.identifyInput(normalizedTarget) == ERROR_IDENTIFIER) {
+            isButtonClicked.value = false
+            insertErrorText.value = "Enter a valid hostname, IPv4, IPv6 address or URL."
+            return@LaunchedEffect
+        }
+
+        searchText.value = normalizedTarget
+        isButtonClicked.value = false
+        isSearchBarEnabled.value = false
+        traceRunId.intValue += 1
+        keyboardController?.hide()
+        if (activeRunScope.value == null) {
+            activeRunScope.value = CoroutineScope(
+                SupervisorJob() + Dispatchers.Main.immediate
+            )
+        }
+        tracerouteThreadsIntList.removeAll { it == 0 }
+        clearData(
+            multipleIps = multipleIps,
+            nativePingCheckErrorText = nativePingCheckErrorText,
+            singleHopCursor = singleHopCursor,
+            gridDataList = gridDataList,
+            insertErrorText = insertErrorText,
+            testAPIText = testText,
+            preferredAPIIp = preferredAPIIp,
+            apiDNSList = apiDNSList,
+            preferredAPIIpPOW = preferredAPIIpPOW,
+            apiDNSListPOW = apiDNSListPOW,
+            apiToken = apiToken,
+            traceMapThreadsMapList = traceMapThreadsMapList,
+            traceMapURL = traceMapURL,
+            isAPIFinished = isAPIFinished,
+            copyHistory = copyHistory
+        )
+        isScrollToFirstLineTriggered.value = true
+    }
+
 
 
 
@@ -772,41 +864,6 @@ fun MainColumn(
         //Top Bar
 
         Spacer(modifier = Modifier.height(12.dp))
-        //Run button
-        if (isButtonClicked.value) {
-            val normalizedTarget = normalizeTargetInput(searchText.value)
-            if (trHandler.identifyInput(normalizedTarget) == ERROR_IDENTIFIER) {
-                isButtonClicked.value = false
-                insertErrorText.value = "Enter a valid hostname, IPv4, IPv6 address or URL."
-            } else {
-                searchText.value = normalizedTarget
-                isButtonClicked.value = false
-                isSearchBarEnabled.value = false
-                traceRunId.intValue += 1
-                keyboardController?.hide()
-                if (activeRunScope.value == null) {
-                    activeRunScope.value = CoroutineScope(
-                        SupervisorJob() + Dispatchers.Main.immediate
-                    )
-                }
-                tracerouteThreadsIntList.removeAll { it == 0 }
-                clearData(
-                multipleIps = multipleIps,
-                nativePingCheckErrorText = nativePingCheckErrorText,
-                singleHopCursor = singleHopCursor,
-                gridDataList = gridDataList, insertErrorText = insertErrorText,
-                testAPIText = testText, preferredAPIIp = preferredAPIIp,
-                apiDNSList = apiDNSList, preferredAPIIpPOW = preferredAPIIpPOW,
-                apiDNSListPOW = apiDNSListPOW,
-                apiToken = apiToken,
-                traceMapThreadsMapList = traceMapThreadsMapList,
-                traceMapURL = traceMapURL, isAPIFinished = isAPIFinished,
-                copyHistory = copyHistory
-            )
-                isScrollToFirstLineTriggered.value = true
-            }
-        }
-
         LaunchedEffect(traceRunId.intValue) {
             if (traceRunId.intValue > 0) {
                 activeRunScope.value?.launch(Dispatchers.IO) {
@@ -868,6 +925,7 @@ fun MainColumn(
                     currentDomain = currentDomain,
                     searchText = searchText,
                     copyHistory = copyHistory,
+                    gridDataList = gridDataList,
                     historyDao = historyDao,
                     db = db
                 )
@@ -1066,20 +1124,6 @@ fun MainColumn(
             }
             Spacer(modifier = Modifier.width(8.dp))
             if (hasResult && tracerouteThreadsIntList.all { it == 0 }) {
-                copyHistory.value = gridDataList.joinToString(
-                    separator = "\n",
-                    prefix = "Traceroute Result:\n" + "IP:" + searchText.value + "\n" + "Domain:" + currentDomain.value + "\n"
-                ) { layer ->
-                    if (layer[0][0].value != "") {
-                        layer.joinToString(separator = "\n") { row ->
-                            row.joinToString(separator = ", ") { cell ->
-                                cell.value
-                            }
-                        }
-                    } else {
-                        ""
-                    }
-                }.trim()
                 Button(
                     onClick = {
                         clipboardManager.setPrimaryClip(

@@ -6,7 +6,7 @@ NextTraceroute，一款默认使用NextTrace API的免root安卓版路由跟踪�
 
 # Usage
 
-[Releases](https://github.com/nxtrace/NextTraceroute/releases)
+[Releases](https://github.com/alzpqm/NextTraceroute/releases)
 
 Enter target address (IPv4, IPv6, Hostname and URL), press run, and enjoy!
 
@@ -14,6 +14,9 @@ Enter target address (IPv4, IPv6, Hostname and URL), press run, and enjoy!
 
 The Android client is compatible with NextTrace core/API v1.7.2 and uses the
 legacy v3 WebSocket/PoW API flow, which does not require a user token.
+
+Version 0.2.0 targets Android 17 (API 37), supports Android 8.0 and newer,
+and uses a Material 3 adaptive interface.
 
 # Get This App
 

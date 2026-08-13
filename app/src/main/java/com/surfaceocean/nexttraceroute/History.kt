@@ -84,6 +84,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.room.ColumnInfo
@@ -100,7 +101,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import java.util.UUID
 
 @Entity(tableName = "history")
@@ -180,13 +180,16 @@ fun HistoryPage(
     val showDeleteAllWarningDialog = remember { mutableStateOf(false) }
     val currentDeletionUUID = remember { mutableStateOf(MAGIC_UUID) }
     val isDatabaseLoadFinished = remember { mutableStateOf(false) }
-    if (clearDBToastInfo.value != "") {
-        Toast.makeText(
-            context,
-            clearDBToastInfo.value,
-            Toast.LENGTH_SHORT
-        ).show()
-        clearDBToastInfo.value = ""
+    val currentLocale = LocalConfiguration.current.locales[0]
+    LaunchedEffect(clearDBToastInfo.value) {
+        if (clearDBToastInfo.value.isNotBlank()) {
+            Toast.makeText(
+                context,
+                clearDBToastInfo.value,
+                Toast.LENGTH_SHORT
+            ).show()
+            clearDBToastInfo.value = ""
+        }
     }
 
     LaunchedEffect(isDeleteAllTriggered.value) {
@@ -358,7 +361,7 @@ fun HistoryPage(
             itemsIndexed(items = allData, key = { _, item -> item.uuid }) { allDataIndex, item ->
                 val preShareText = "Date:" + SimpleDateFormat(
                     "yyyy-MM-dd HH:mm:ss",
-                    Locale.getDefault()
+                    currentLocale
                 ).format(Date(item.timeStamp)) + "\n"
                 Card(
                     modifier = Modifier
@@ -383,7 +386,7 @@ fun HistoryPage(
                             color = resultASColor.value,
                             text = SimpleDateFormat(
                                 "yyyy-MM-dd HH:mm:ss",
-                                Locale.getDefault()
+                                currentLocale
                             ).format(
                                 Date(item.timeStamp)
                             ),

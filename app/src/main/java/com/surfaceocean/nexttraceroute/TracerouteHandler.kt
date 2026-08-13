@@ -58,7 +58,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.Dns
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -176,21 +178,18 @@ class TracerouteHandler {
         v6Status: MutableState<Boolean>,
         errorText: MutableState<String>
     ) {
-        try {
-            val process = Runtime.getRuntime().exec("ping")
-            process.waitFor()
+        fun commandExists(command: String): Boolean = try {
+            val process = ProcessBuilder(command).redirectErrorStream(true).start()
+            val finished = process.waitFor(2, TimeUnit.SECONDS)
+            if (!finished) process.destroyForcibly()
+            finished
         } catch (e: Exception) {
-            Log.e("testNativePing", "", e)
-            v4Status.value = false
+            Log.e("testNativePing", "$command is unavailable", e)
+            false
         }
-        try {
-            val process6 = Runtime.getRuntime().exec("ping6")
-            process6.waitFor()
 
-        } catch (e: Exception) {
-            Log.e("testNativePing", "", e)
-            v6Status.value = false
-        }
+        v4Status.value = commandExists("ping")
+        v6Status.value = commandExists("ping6")
         if (v4Status.value && v6Status.value) {
             errorText.value = ""
         } else if (v4Status.value) {
@@ -1039,15 +1038,14 @@ class TracerouteHandler {
 
         ) {
 
-        val inputType = remember { mutableStateOf("") }
-
-        inputType.value = identifyInput(insertion.value)
+        val inputType = remember(insertion.value) { identifyInput(insertion.value) }
         //pingPlaceText.value= testNativePing()
-        val lastHopCursor = remember { mutableIntStateOf(114514) }
-        lastHopCursor.intValue = 114514
-        var nativeStatus = remember { MutableList(maxTTL.intValue) { mutableIntStateOf(0) } }
-        if (inputType.value == IPV4_IDENTIFIER) {
-            nativeStatus = MutableList(maxTTL.intValue) { mutableIntStateOf(0) }
+        val lastHopCursor = remember(insertion.value) { mutableIntStateOf(114514) }
+        val nativeStatus = remember(insertion.value, maxTTL.intValue) {
+            MutableList(maxTTL.intValue) { mutableIntStateOf(0) }
+        }
+        val nativePingSemaphore = remember(insertion.value) { Semaphore(4) }
+        if (inputType == IPV4_IDENTIFIER) {
             for ((index, item) in gridDataList.withIndex()) {
                 LaunchedEffect(Unit) {
                     scope.launch(Dispatchers.IO) {
@@ -1056,10 +1054,14 @@ class TracerouteHandler {
                             tracerouteThreadsIntList.add(uniqueID)
                         }
 
-                        val traceroute4Result = nativePingHandler(
-                            ip = insertion.value, ttl = (index + 1).toString(),
-                            count = count.value, timeout = timeout.value
-                        )
+                        val traceroute4Result = nativePingSemaphore.withPermit {
+                            nativePingHandler(
+                                ip = insertion.value,
+                                ttl = (index + 1).toString(),
+                                count = count.value,
+                                timeout = timeout.value
+                            )
+                        }
                         val traceroute4RegexResult = nativeGetHopIPv4(traceroute4Result)
                         if (traceroute4RegexResult == insertion.value) {
                             if (index < lastHopCursor.intValue) {
@@ -1090,8 +1092,7 @@ class TracerouteHandler {
             }
 
 
-        } else if (inputType.value == IPV6_IDENTIFIER) {
-            nativeStatus = MutableList(maxTTL.intValue) { mutableIntStateOf(0) }
+        } else if (inputType == IPV6_IDENTIFIER) {
             for ((index, item) in gridDataList.withIndex()) {
                 LaunchedEffect(Unit) {
                     scope.launch(Dispatchers.IO) {
@@ -1099,10 +1100,14 @@ class TracerouteHandler {
                         threadMutex.withLock {
                             tracerouteThreadsIntList.add(uniqueID)
                         }
-                        val traceroute6Result = nativePingHandler(
-                            ip = insertion.value, ttl = (index + 1).toString(),
-                            count = count.value, timeout = timeout.value
-                        )
+                        val traceroute6Result = nativePingSemaphore.withPermit {
+                            nativePingHandler(
+                                ip = insertion.value,
+                                ttl = (index + 1).toString(),
+                                count = count.value,
+                                timeout = timeout.value
+                            )
+                        }
                         val traceroute6RegexResult = nativeGetHopIPv6(traceroute6Result)
                         if (traceroute6RegexResult == insertion.value) {
                             if (index < lastHopCursor.intValue) {
@@ -1133,7 +1138,7 @@ class TracerouteHandler {
             }
 
 
-        } else if (inputType.value == HOSTNAME_IDENTIFIER) {
+        } else if (inputType == HOSTNAME_IDENTIFIER) {
             isDNSInProgress.value = true
             val dnsThreadsList = mutableListOf(0)
             ResolveHandler(
@@ -1185,7 +1190,7 @@ class TracerouteHandler {
             Toast.makeText(context, "Invalid input! Wait 2 Seconds", Toast.LENGTH_LONG).show()
         }
 
-        if (inputType.value == IPV4_IDENTIFIER || inputType.value == IPV6_IDENTIFIER) {
+        if (inputType == IPV4_IDENTIFIER || inputType == IPV6_IDENTIFIER) {
 
             LaunchedEffect(Unit) {
                 scope.launch(Dispatchers.IO) {
@@ -2458,7 +2463,15 @@ class TracerouteHandler {
                 return ERROR_IDENTIFIER
             }
             val process = Runtime.getRuntime().exec(command)
-            process.waitFor()
+            val maxDurationSeconds = count.toLongOrNull()
+                ?.times(timeout.toLongOrNull() ?: 1L)
+                ?.plus(3L)
+                ?.coerceIn(5L, 60L)
+                ?: 15L
+            if (!process.waitFor(maxDurationSeconds, TimeUnit.SECONDS)) {
+                process.destroyForcibly()
+                return ERROR_IDENTIFIER
+            }
             val stdReader = BufferedReader(InputStreamReader(process.inputStream))
             val errReader = BufferedReader(InputStreamReader(process.errorStream))
             val stdOutput = StringBuilder()
