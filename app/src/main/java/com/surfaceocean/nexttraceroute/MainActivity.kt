@@ -48,6 +48,7 @@ import android.util.Patterns
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -62,42 +63,50 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -115,7 +124,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.net.toUri
 import androidx.room.Room
@@ -125,6 +133,8 @@ import com.google.gson.reflect.TypeToken
 import com.surfaceocean.nexttraceroute.ui.theme.NextTracerouteTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -134,26 +144,30 @@ import java.io.File
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             NextTracerouteTheme {
-                val borderColor = remember { mutableStateOf(Color.DarkGray) }
-                val disabledContentColor = remember { mutableStateOf(Color.DarkGray) }
-                val backgroundColor = remember { mutableStateOf(Color.Black) }
-                val genericTextColor = remember { mutableStateOf(Color.White) }
-                val navigationIconColor = remember { mutableStateOf(Color.White) }
-                val buttonEnabledColor = remember { mutableStateOf(Color(0xFF00F6FF)) }
-                val buttonDisabledColor = remember { mutableStateOf(Color.Gray) }
-                val buttonTextColor = remember { mutableStateOf(Color.Black) }
-                val resultSNColor = remember { mutableStateOf(Color.Yellow) }
-                val resultASColor = remember { mutableStateOf(Color.Green) }
-                val resultPingColor = remember { mutableStateOf(Color(0xFF00FFFF)) }
+                val materialColors = MaterialTheme.colorScheme
+                val borderColor = remember {
+                    mutableStateOf(materialColors.outlineVariant)
+                }
+                val disabledContentColor = remember {
+                    mutableStateOf(materialColors.onSurface.copy(alpha = 0.38f))
+                }
+                val backgroundColor = remember { mutableStateOf(materialColors.background) }
+                val genericTextColor = remember { mutableStateOf(materialColors.onBackground) }
+                val navigationIconColor = remember { mutableStateOf(materialColors.onSurface) }
+                val buttonEnabledColor = remember { mutableStateOf(materialColors.primary) }
+                val buttonDisabledColor = remember { mutableStateOf(materialColors.surfaceVariant) }
+                val buttonTextColor = remember { mutableStateOf(materialColors.onPrimary) }
+                val resultSNColor = remember { mutableStateOf(materialColors.primary) }
+                val resultASColor = remember { mutableStateOf(materialColors.tertiary) }
+                val resultPingColor = remember { mutableStateOf(materialColors.secondary) }
                 Surface(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .systemBarsPadding(),
-                    //color = MaterialTheme.colorScheme.background,
-                    color = backgroundColor.value
+                        .fillMaxSize(),
+                    color = backgroundColor.value,
+                    contentColor = genericTextColor.value
                 ) {
                     org.xbill.DNS.config.AndroidResolverConfigProvider.setContext(this)
                     val isSearchBarEnabled = remember { mutableStateOf(true) }
@@ -243,14 +257,11 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    //scroll to first line after run button is pressed
-                    LaunchedEffect(Unit) {
-                        while (true) {
-                            if (isScrollToFirstLineTriggered.value) {
-                                isScrollToFirstLineTriggered.value = false
-                                listState.animateScrollToItem(index = 0)
-                            }
-                            delay(timeMillis = 1000)
+                    // Scroll to the first result after a new trace starts.
+                    LaunchedEffect(isScrollToFirstLineTriggered.value) {
+                        if (isScrollToFirstLineTriggered.value) {
+                            isScrollToFirstLineTriggered.value = false
+                            listState.animateScrollToItem(index = 0)
                         }
                     }
 
@@ -268,7 +279,9 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .safeDrawingPadding(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         when (currentPage.value) {
@@ -402,8 +415,6 @@ fun AboutPage(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .systemBarsPadding()
             .border(1.dp, borderColor.value)
             .padding(bottom = 1.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -420,6 +431,7 @@ fun AboutPage(
             color = genericTextColor.value,
             text = "NextTraceroute version " +
                     BuildConfig.VERSION_NAME + ", an Android traceroute app using Nexttrace API\n" +
+                    "NextTrace core/API compatibility: v" + NEXTTRACE_CORE_VERSION + "\n" +
                     "Copyright (C) 2024-2026 surfaceocean\n" +
                     "Email: r2qb8uc5@protonmail.com\n" +
                     "GitHub: https://github.com/nxtrace/NextTraceroute\n" +
@@ -467,28 +479,22 @@ fun MyTopAppBar(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     TopAppBar(
-        colors = TopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = backgroundColor.value,
-            scrolledContainerColor = genericTextColor.value,
+            scrolledContainerColor = backgroundColor.value,
             navigationIconContentColor = genericTextColor.value,
             titleContentColor = genericTextColor.value,
-            actionIconContentColor = genericTextColor.value,
-            subtitleContentColor = genericTextColor.value
+            actionIconContentColor = navigationIconColor.value
         ),
         title = {
             Text(
                 "NextTraceroute",
-                style = TextStyle(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
             )
         },
         modifier = modifier
-            .border(1.dp, borderColor.value)
-            .padding(bottom = 1.dp)
-            .statusBarsPadding()
-            .systemBarsPadding(),
+            .fillMaxWidth(),
         actions = {
             IconButton(onClick = { showMenu = !showMenu }
             ) {
@@ -502,6 +508,7 @@ fun MyTopAppBar(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },
                 modifier = Modifier.background(backgroundColor.value),
+                shape = RoundedCornerShape(20.dp)
             ) {
                 DropdownMenuItem(
                     modifier = Modifier.background(backgroundColor.value),
@@ -588,23 +595,16 @@ fun CheckThreadsStatus(
 ) {
     LaunchedEffect(Unit) {
         scope.launch(Dispatchers.IO) {
-            delay(timeMillis = 200)
-            while (isDNSInProgress.value) {
-                return@launch
-            }
-            var allDone = true
-            delay(timeMillis = 10000)
-            while (allDone) {
-                delay(timeMillis = 1000)
-                if (tracerouteThreadsIntList.all { it == 0 }) {
-                    allDone = false
-                }
-
+            // Give the worker effects time to register their jobs, then finish as
+            // soon as the run is actually idle. The old implementation always
+            // waited ten seconds and could also finish an empty/failed run.
+            delay(timeMillis = 500)
+            while (isDNSInProgress.value || tracerouteThreadsIntList.any { it != 0 }) {
+                delay(timeMillis = 250)
             }
             mutex.withLock {
                 tracerouteThreadsIntList.removeAll { it == 0 }
             }
-            //tracerouteThreadsIntList.clear()
             if (multipleIps.isEmpty()) {
                 isSearchBarEnabled.value = true
                 //Add history after all threads are finished
@@ -691,7 +691,7 @@ fun MainColumn(
     resultPingColor: MutableState<Color>
 ) {
 
-    val threadMutex = Mutex()
+    val threadMutex = remember { Mutex() }
     val tracerouteThreadsIntList = remember { mutableStateListOf<Int>() }
     val traceMapThreadsMapList = remember { mutableListOf<List<MutableMap<String, Any?>>>() }
     val traceMapURL = remember { mutableStateOf("") }
@@ -700,12 +700,17 @@ fun MainColumn(
     val isNativePing4Available = remember { mutableStateOf(true) }
     val isNativePing6Available = remember { mutableStateOf(true) }
     val nativePingCheckErrorText = remember { mutableStateOf("") }
+    val traceRunId = remember { mutableIntStateOf(0) }
     val isButtonClicked = remember { mutableStateOf(false) }
     val singleHopCursor = remember(maxTraceTTL.intValue) {
         MutableList(maxTraceTTL.intValue) { mutableStateOf("") }
     }
     val insertErrorText = remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
+    val activeRunScope = remember { mutableStateOf<CoroutineScope?>(null) }
+    DisposableEffect(Unit) {
+        onDispose { activeRunScope.value?.cancel() }
+    }
     val searchText = remember { mutableStateOf("") }
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -744,6 +749,16 @@ fun MainColumn(
     }
     val testText = remember { mutableStateOf("") }
     val copyHistory = remember { mutableStateOf("") }
+    val cancelTrace = {
+        activeRunScope.value?.cancel()
+        activeRunScope.value = null
+        tracerouteThreadsIntList.clear()
+        multipleIps.clear()
+        isDNSInProgress.value = false
+        isAPIFinished.value = true
+        isSearchBarEnabled.value = true
+        testText.value = "Trace stopped."
+    }
 
 
 
@@ -751,19 +766,31 @@ fun MainColumn(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
-            .systemBarsPadding(),
+            .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         //Top Bar
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         //Run button
         if (isButtonClicked.value) {
-            isButtonClicked.value = false
-            isSearchBarEnabled.value = false
-            keyboardController?.hide()
-            clearData(
+            val normalizedTarget = normalizeTargetInput(searchText.value)
+            if (trHandler.identifyInput(normalizedTarget) == ERROR_IDENTIFIER) {
+                isButtonClicked.value = false
+                insertErrorText.value = "Enter a valid hostname, IPv4, IPv6 address or URL."
+            } else {
+                searchText.value = normalizedTarget
+                isButtonClicked.value = false
+                isSearchBarEnabled.value = false
+                traceRunId.intValue += 1
+                keyboardController?.hide()
+                if (activeRunScope.value == null) {
+                    activeRunScope.value = CoroutineScope(
+                        SupervisorJob() + Dispatchers.Main.immediate
+                    )
+                }
+                tracerouteThreadsIntList.removeAll { it == 0 }
+                clearData(
                 multipleIps = multipleIps,
                 nativePingCheckErrorText = nativePingCheckErrorText,
                 singleHopCursor = singleHopCursor,
@@ -776,55 +803,75 @@ fun MainColumn(
                 traceMapURL = traceMapURL, isAPIFinished = isAPIFinished,
                 copyHistory = copyHistory
             )
-            trHandler.testNativePing(
-                v4Status = isNativePing4Available,
-                v6Status = isNativePing6Available, errorText = nativePingCheckErrorText
-            )
-            trHandler.InsertHandler(
-                threadMutex = threadMutex,
-                tracerouteThreadsIntList = tracerouteThreadsIntList,
-                insertion = searchText,
-                insertErrorText = insertErrorText,
-                gridDataList = gridDataList,
-                scope = coroutineScope,
-                maxTTL = maxTraceTTL, count = traceCount, timeout = traceTimeout,
-                multipleIps = multipleIps,
-                tracerouteDNSServer = tracerouteDNSServer, context = context,
-                isDNSInProgress = isDNSInProgress,
-                testAPIText = testText,
-                currentDOHServer = currentDOHServer,
-                currentDNSMode = currentDNSMode,
-                isTraceMapEnabled = isTraceMapEnabled,
-                traceMapURL = traceMapURL,
-                preferredAPIIp = preferredAPIIp,
-                apiHostName = apiHostName,
-                traceMapThreadsMapList = traceMapThreadsMapList,
-                isSearchBarEnabled = isSearchBarEnabled,
-                isAPIFinished = isAPIFinished,
-                apiToken = apiToken,
-                currentLanguage = currentLanguage,
-                apiDNSList = apiDNSList,
-                apiDNSListPOW = apiDNSListPOW,
-                apiDNSName = apiDNSName,
-                apiDNSNamePOW = apiDNSNamePOW,
-                apiHostNamePOW = apiHostNamePOW,
-                preferredAPIIpPOW = preferredAPIIpPOW
-            )
-            CheckThreadsStatus(
-                scope = coroutineScope,
-                mutex = threadMutex,
-                tracerouteThreadsIntList = tracerouteThreadsIntList,
-                isDNSInProgress = isDNSInProgress,
-                isSearchBarEnabled = isSearchBarEnabled,
-                multipleIps = multipleIps,
-                currentDomain = currentDomain,
-//                insertErrorText = insertErrorText,
-                searchText = searchText,
-                copyHistory = copyHistory,
-                historyDao = historyDao,
-                db = db
-            )
-            isScrollToFirstLineTriggered.value = true
+                isScrollToFirstLineTriggered.value = true
+            }
+        }
+
+        LaunchedEffect(traceRunId.intValue) {
+            if (traceRunId.intValue > 0) {
+                activeRunScope.value?.launch(Dispatchers.IO) {
+                    trHandler.testNativePing(
+                        v4Status = isNativePing4Available,
+                        v6Status = isNativePing6Available,
+                        errorText = nativePingCheckErrorText
+                    )
+                }
+            }
+        }
+
+        // Keep the worker composables in the composition for the whole run.
+        // The previous click-only placement could cancel their LaunchedEffects
+        // as soon as the button reset its click state.
+        if (!isSearchBarEnabled.value) {
+            key(traceRunId.intValue) {
+                val runScope = activeRunScope.value ?: coroutineScope
+                trHandler.InsertHandler(
+                    threadMutex = threadMutex,
+                    tracerouteThreadsIntList = tracerouteThreadsIntList,
+                    insertion = searchText,
+                    insertErrorText = insertErrorText,
+                    gridDataList = gridDataList,
+                    scope = runScope,
+                    maxTTL = maxTraceTTL,
+                    count = traceCount,
+                    timeout = traceTimeout,
+                    multipleIps = multipleIps,
+                    tracerouteDNSServer = tracerouteDNSServer,
+                    context = context,
+                    isDNSInProgress = isDNSInProgress,
+                    testAPIText = testText,
+                    currentDOHServer = currentDOHServer,
+                    currentDNSMode = currentDNSMode,
+                    isTraceMapEnabled = isTraceMapEnabled,
+                    traceMapURL = traceMapURL,
+                    preferredAPIIp = preferredAPIIp,
+                    apiHostName = apiHostName,
+                    traceMapThreadsMapList = traceMapThreadsMapList,
+                    isSearchBarEnabled = isSearchBarEnabled,
+                    isAPIFinished = isAPIFinished,
+                    apiToken = apiToken,
+                    currentLanguage = currentLanguage,
+                    apiDNSList = apiDNSList,
+                    apiDNSListPOW = apiDNSListPOW,
+                    apiDNSName = apiDNSName,
+                    apiDNSNamePOW = apiDNSNamePOW,
+                    apiHostNamePOW = apiHostNamePOW,
+                    preferredAPIIpPOW = preferredAPIIpPOW
+                )
+                CheckThreadsStatus(
+                    scope = runScope,
+                    mutex = threadMutex,
+                    tracerouteThreadsIntList = tracerouteThreadsIntList,
+                    isDNSInProgress = isDNSInProgress,
+                    isSearchBarEnabled = isSearchBarEnabled,
+                    multipleIps = multipleIps,
+                    currentDomain = currentDomain,
+                    searchText = searchText,
+                    copyHistory = copyHistory,
+                    historyDao = historyDao,
+                    db = db
+                )
+            }
         }
         //Compare singleHopCursor with current value
 
@@ -833,7 +880,7 @@ fun MainColumn(
             tracerouteThreadsIntList = tracerouteThreadsIntList,
             singleHopCursor = singleHopCursor,
             gridDataList = gridDataList,
-            scope = coroutineScope,
+            scope = activeRunScope.value ?: coroutineScope,
             count = traceCount,
 
             timeout = traceTimeout,
@@ -842,20 +889,49 @@ fun MainColumn(
             currentDNSMode = currentDNSMode,
             currentDOHServer = currentDOHServer
         )
-        Row(
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            SearchBar(
-                onSearchResults = searchText,
-                modifier = Modifier.weight(1f),
-                isButtonClicked = isButtonClicked,
-                isSearchBarEnabled = isSearchBarEnabled,
-                borderColor = borderColor,
-                backgroundColor = backgroundColor,
-                genericTextColor = genericTextColor,
-                buttonEnabledColor = buttonEnabledColor
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SearchBar(
+                    onSearchResults = searchText,
+                    modifier = Modifier.weight(1f),
+                    isButtonClicked = isButtonClicked,
+                    isSearchBarEnabled = isSearchBarEnabled,
+                    borderColor = borderColor,
+                    backgroundColor = backgroundColor,
+                    genericTextColor = genericTextColor,
+                    buttonEnabledColor = buttonEnabledColor
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    modifier = Modifier.heightIn(min = 56.dp),
+                    enabled = isSearchBarEnabled.value,
+                    onClick = { isButtonClicked.value = true },
+                    shape = RoundedCornerShape(18.dp),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSearchBarEnabled.value) buttonEnabledColor.value else buttonDisabledColor.value,
+                        contentColor = buttonTextColor.value,
+                        disabledContainerColor = buttonDisabledColor.value,
+                        disabledContentColor = disabledContentColor.value
+                    )
+                ) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Run")
+                }
+            }
             val searchDatabaseResultList = remember { mutableStateListOf<String>() }
             val scope = rememberCoroutineScope()
             LaunchedEffect(searchText.value) {
@@ -894,46 +970,74 @@ fun MainColumn(
                     DropdownMenuItem(onClick = {
                         searchText.value = text
                         searchDatabaseResultList.clear()
-                    }, text = { Text(text = text) })
+                    }, text = { Text(text = text, color = genericTextColor.value) })
                 }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(
-                modifier = Modifier.alignByBaseline(),
-                enabled = isSearchBarEnabled.value,
-                onClick = { isButtonClicked.value = true },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSearchBarEnabled.value) buttonEnabledColor.value else buttonDisabledColor.value,
-                    contentColor = buttonTextColor.value,
-                    disabledContainerColor = buttonDisabledColor.value,
-                    disabledContentColor = disabledContentColor.value
-                )
-
-            ) {
-                Text("Run")
-            }
-
         }
-        if (!isSearchBarEnabled.value && tracerouteThreadsIntList.any { it != 0 }) {
-            Spacer(modifier = Modifier.height(20.dp))
-            CircularProgressIndicator(
-                color = genericTextColor.value,
-                strokeWidth = 4.dp,
-                modifier = Modifier.size(50.dp)
-            )
-            Spacer(modifier = Modifier.height(20.dp))
+        if (!isSearchBarEnabled.value) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Tracing route…",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = genericTextColor.value
+                        )
+                        OutlinedButton(
+                            onClick = cancelTrace,
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Filled.Close, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Stop")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = buttonEnabledColor.value,
+                        trackColor = borderColor.value
+                    )
+                }
+            }
         }
 
         if (insertErrorText.value != "") {
-            Text(text = insertErrorText.value, color = genericTextColor.value)
+            StatusCard(
+                message = insertErrorText.value,
+                color = MaterialTheme.colorScheme.errorContainer,
+                textColor = MaterialTheme.colorScheme.onErrorContainer
+            )
         }
         if (testText.value != "") {
-            Text(text = testText.value, color = genericTextColor.value)
+            StatusCard(
+                message = testText.value,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                textColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
 //            clipboardManager.setPrimaryClip(ClipData.newPlainText("simple text",testText.value))
         }
         if (nativePingCheckErrorText.value != "") {
-            Toast.makeText(context, nativePingCheckErrorText.value, Toast.LENGTH_LONG).show()
+            StatusCard(
+                message = nativePingCheckErrorText.value,
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                textColor = MaterialTheme.colorScheme.onTertiaryContainer
+            )
         }
+
+        val visibleGridDataList = gridDataList.filter { layer ->
+            layer.any { row -> row.any { cell -> cell.value.isNotBlank() } }
+        }
+        val hasResult = visibleGridDataList.isNotEmpty()
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -954,13 +1058,14 @@ fun MainColumn(
                         contentColor = buttonTextColor.value,
                         disabledContainerColor = buttonDisabledColor.value,
                         disabledContentColor = disabledContentColor.value
-                    )
+                    ),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Map")
+                    Text("Open map")
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            if (tracerouteThreadsIntList.all { it == 0 }) {
+            if (hasResult && tracerouteThreadsIntList.all { it == 0 }) {
                 copyHistory.value = gridDataList.joinToString(
                     separator = "\n",
                     prefix = "Traceroute Result:\n" + "IP:" + searchText.value + "\n" + "Domain:" + currentDomain.value + "\n"
@@ -988,9 +1093,10 @@ fun MainColumn(
                         contentColor = buttonTextColor.value,
                         disabledContainerColor = buttonDisabledColor.value,
                         disabledContentColor = disabledContentColor.value
-                    )
+                    ),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Copy Result")
+                    Text("Copy result")
                 }
             }
         }
@@ -1014,31 +1120,50 @@ fun MainColumn(
         //Select a ip and change
 
         if (multipleIps.isNotEmpty() && tracerouteThreadsIntList.none { it != 0 }) {
-            LazyColumn(
+            Card(
                 modifier = Modifier
-                    .border(1.dp, borderColor.value)
                     .fillMaxWidth()
+                    .padding(top = 12.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                )
             ) {
-                itemsIndexed(
-                    items = multipleIps,
-                    key = { _, item -> item.value }) { _, multipleIPItem ->
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Button(
-                            onClick = {
-                                currentDomain.value = searchText.value
-                                searchText.value = multipleIPItem.value
-                                multipleIps.clear()
-                                isButtonClicked.value = true
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = "Choose an address",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = genericTextColor.value
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        itemsIndexed(
+                            items = multipleIps,
+                            key = { _, item -> item.value }) { _, multipleIPItem ->
+                            Button(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    currentDomain.value = searchText.value
+                                    searchText.value = multipleIPItem.value
+                                    multipleIps.clear()
+                                    isButtonClicked.value = true
 
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = buttonEnabledColor.value,
-                                contentColor = buttonTextColor.value,
-                                disabledContainerColor = buttonDisabledColor.value,
-                                disabledContentColor = disabledContentColor.value
-                            )
-                        ) {
-                            Text(multipleIPItem.value)
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = buttonEnabledColor.value,
+                                    contentColor = buttonTextColor.value,
+                                    disabledContainerColor = buttonDisabledColor.value,
+                                    disabledContentColor = disabledContentColor.value
+                                )
+                            ) {
+                                Text(multipleIPItem.value)
+                            }
                         }
                     }
                 }
@@ -1048,93 +1173,85 @@ fun MainColumn(
         LazyColumn(
             state = listState,
             modifier = Modifier
-                .border(1.dp, borderColor.value)
-            //.padding(bottom = 1.dp)
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            itemsIndexed(items = gridDataList) { _, gridDataListItem ->
-                //for ((gridDataListItemIndex, gridDataListItem) in gridDataList.withIndex()) {
-                for ((gridDataIndex, gridDataItem) in gridDataListItem.withIndex()) {
-                    val arrangementForOneColumn =
-                        remember { mutableStateOf(Arrangement.SpaceBetween) }
-                    if (gridDataItem.size == 1) {
-                        arrangementForOneColumn.value = Arrangement.Center
-                    }
-                    //Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = arrangementForOneColumn.value,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        for ((colIndex, item) in gridDataItem.withIndex()) {
-//                            var uGridIndex = remember { mutableIntStateOf(
-//                                gridDataListItemIndex*100+gridDataIndex*10+colIndex) }
-                            val colorForSpecialUse = remember {
-                                mutableStateOf(genericTextColor.value)
-                            }
-                            colorForSpecialUse.value = genericTextColor.value
-                            if (gridDataIndex == 0 && colIndex == 0) {
-                                colorForSpecialUse.value = resultSNColor.value
-                            }
-                            if (gridDataIndex == 0 && (colIndex == 2 || colIndex == 3)) {
-                                colorForSpecialUse.value = resultASColor.value
-                            }
-                            if (gridDataIndex == 2 && (colIndex == 1)) {
-                                colorForSpecialUse.value = resultPingColor.value
-                            }
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .padding(8.dp)
-                                    //.border(1.dp, genericTextColor.value, RoundedCornerShape(4.dp))
-                                    .pointerInput(item) {
-                                        detectTapGestures(
-                                            onLongPress = {
-                                                clipboardManager.setPrimaryClip(
-                                                    ClipData.newPlainText(
-                                                        "simple text",
-                                                        item.value
-                                                    )
-                                                )
-                                                Toast.makeText(
-                                                    context,
-                                                    "Copied!",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            },
-                                            onTap = {
-                                                if (item.value != "*" && item.value != "") {
-                                                    if (!(gridDataIndex == 0 && colIndex == 0) && !(gridDataIndex == 2 && colIndex == 1)) {
-                                                        val tapURL =
-                                                            "https://bgp.tools/search?q=" + item.value
-                                                        context.startActivity(
-                                                            Intent(
-                                                                Intent.ACTION_VIEW,
-                                                                tapURL.toUri()
+            itemsIndexed(items = visibleGridDataList) { _, gridDataListItem ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        for ((gridDataIndex, gridDataItem) in gridDataListItem.withIndex()) {
+                            val arrangementForOneColumn =
+                                if (gridDataItem.size == 1) {
+                                    Arrangement.Center
+                                } else {
+                                    Arrangement.SpaceBetween
+                                }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = arrangementForOneColumn,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                for ((colIndex, item) in gridDataItem.withIndex()) {
+                                    val colorForSpecialUse = when {
+                                        gridDataIndex == 0 && colIndex == 0 -> resultSNColor.value
+                                        gridDataIndex == 0 && (colIndex == 2 || colIndex == 3) -> resultASColor.value
+                                        gridDataIndex == 2 && colIndex == 1 -> resultPingColor.value
+                                        else -> genericTextColor.value
+                                    }
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier
+                                            .padding(vertical = 4.dp, horizontal = 6.dp)
+                                            .pointerInput(item) {
+                                                detectTapGestures(
+                                                    onLongPress = {
+                                                        clipboardManager.setPrimaryClip(
+                                                            ClipData.newPlainText(
+                                                                "simple text",
+                                                                item.value
                                                             )
                                                         )
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Copied!",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    },
+                                                    onTap = {
+                                                        if (item.value != "*" && item.value != "") {
+                                                            if (!(gridDataIndex == 0 && colIndex == 0) && !(gridDataIndex == 2 && colIndex == 1)) {
+                                                                val tapURL =
+                                                                    "https://bgp.tools/search?q=" + item.value
+                                                                context.startActivity(
+                                                                    Intent(
+                                                                        Intent.ACTION_VIEW,
+                                                                        tapURL.toUri()
+                                                                    )
+                                                                )
+                                                            }
+                                                        }
                                                     }
-                                                }
+                                                )
                                             }
+                                    ) {
+                                        Text(
+                                            text = item.value,
+                                            style = TextStyle(color = colorForSpecialUse)
                                         )
-                                    },
-
-                                ) {
-                                Text(
-                                    text = item.value,
-                                    style = TextStyle(color = colorForSpecialUse.value)
-                                )
+                                    }
+                                }
 
                             }
                         }
                     }
-                    if (gridDataIndex == 2) {
-                        HorizontalDivider(
-                            modifier = Modifier,
-                            thickness = 1.dp,
-                            color = borderColor.value
-                        )
-                    }
-
                 }
             }
 
@@ -1145,6 +1262,29 @@ fun MainColumn(
     }
 
 
+}
+
+
+@Composable
+fun StatusCard(
+    message: String,
+    color: Color,
+    textColor: Color
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = color)
+    ) {
+        Text(
+            text = message,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor
+        )
+    }
 }
 
 
@@ -1161,12 +1301,10 @@ fun SearchBar(
 ) {
     // var searchText by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
-    TextField(
-        keyboardOptions = KeyboardOptions.Default.copy(
-            imeAction = ImeAction.Done
-        ),
+    OutlinedTextField(
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
         keyboardActions = KeyboardActions(
-            onDone = {
+            onGo = {
                 if (isSearchBarEnabled.value) {
                     isButtonClicked.value = true
                 }
@@ -1176,13 +1314,9 @@ fun SearchBar(
         singleLine = true,
         textStyle = TextStyle(color = genericTextColor.value),
         value = onSearchResults.value,
-        //search bar can only clicked again if everything is done
         onValueChange = {
             if (isSearchBarEnabled.value) {
                 onSearchResults.value = it
-                val regex = """.*://?([^/]+)""".toRegex()
-                val matchResult = regex.find(onSearchResults.value)
-                onSearchResults.value = matchResult?.groups?.get(1)?.value ?: onSearchResults.value
                 onSearchResults.value = onSearchResults.value.replace("\n", "").trim()
 
             }
@@ -1190,27 +1324,36 @@ fun SearchBar(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = null
+                contentDescription = "Target"
             )
         },
-        colors = TextFieldDefaults.colors(
+        trailingIcon = if (onSearchResults.value.isNotEmpty()) {
+            {
+                IconButton(onClick = { onSearchResults.value = "" }) {
+                    Icon(Icons.Filled.Clear, contentDescription = "Clear target")
+                }
+            }
+        } else {
+            null
+        },
+        colors = OutlinedTextFieldDefaults.colors(
             unfocusedContainerColor = backgroundColor.value,
             focusedContainerColor = backgroundColor.value,
             focusedTextColor = genericTextColor.value,
             unfocusedTextColor = genericTextColor.value,
-            unfocusedIndicatorColor = borderColor.value,
-            focusedIndicatorColor = buttonEnabledColor.value
+            focusedBorderColor = buttonEnabledColor.value,
+            unfocusedBorderColor = borderColor.value,
+            cursorColor = buttonEnabledColor.value
         ),
         placeholder = {
-            Text("Insert Host, IPv4 or IPv6", color = genericTextColor.value)
+            Text("example.com, IPv4, IPv6 or URL", color = genericTextColor.value)
+        },
+        label = {
+            Text("Target")
         },
         modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp)
     )
 
 }
-
-
-
-

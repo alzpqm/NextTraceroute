@@ -43,7 +43,6 @@ import android.content.Intent
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,12 +52,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -68,8 +66,11 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -114,7 +115,7 @@ data class HistoryData(
 
 @Dao
 interface HistoryDao {
-    @Query("SELECT * FROM history")
+    @Query("SELECT * FROM history ORDER BY timestamp DESC")
     suspend fun getAll(): List<HistoryData>
 
     @Query(
@@ -249,16 +250,19 @@ fun HistoryPage(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .systemBarsPadding()
-            .border(1.dp, borderColor.value)
-            .padding(bottom = 1.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { currentPage.value = "main" }) {
             Icon(Icons.Filled.Home, contentDescription = "Home", tint = navigationIconColor.value)
         }
+        Text(
+            text = "History",
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+            color = genericTextColor.value
+        )
         Button(
             onClick = {
                 showDeleteAllWarningDialog.value = true
@@ -269,7 +273,8 @@ fun HistoryPage(
                 contentColor = buttonTextColor.value,
                 disabledContainerColor = buttonDisabledColor.value,
                 disabledContentColor = disabledContentColor.value
-            )
+            ),
+            shape = RoundedCornerShape(18.dp)
         ) {
             Text("Clear")
         }
@@ -331,24 +336,43 @@ fun HistoryPage(
     val listState = rememberLazyListState()
     //To prevent recompose when allData is updating
     if (isDatabaseLoadFinished.value) {
-        LazyColumn(
+        if (allData.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No trace history yet",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = genericTextColor.value
+                )
+            }
+        } else {
+            LazyColumn(
             state = listState,
-            modifier = Modifier
-                .border(1.dp, borderColor.value)
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             itemsIndexed(items = allData, key = { _, item -> item.uuid }) { allDataIndex, item ->
                 val preShareText = "Date:" + SimpleDateFormat(
                     "yyyy-MM-dd HH:mm:ss",
                     Locale.getDefault()
                 ).format(Date(item.timeStamp)) + "\n"
-                Row(
+                Card(
                     modifier = Modifier
-                        .border(1.dp, borderColor.value)
-                        .padding(bottom = 1.dp),
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
-                ) {
+                    ) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -548,7 +572,9 @@ fun HistoryPage(
                     }
 
                 }
+                }
             }
+        }
         }
     }
 }

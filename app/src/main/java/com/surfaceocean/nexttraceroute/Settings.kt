@@ -316,16 +316,20 @@ fun SettingsColumn(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, borderColor.value)
-            .padding(bottom = 1.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { currentPage.value = "main" }) {
             Icon(Icons.Filled.Home, contentDescription = "Home", tint = navigationIconColor.value)
         }
+        Text(
+            text = "Settings",
+            modifier = Modifier.weight(1f),
+            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+            color = genericTextColor.value
+        )
         Button(
-            modifier = Modifier.alignByBaseline(),
             onClick = {
                 var errorText = ""
                 currentLanguage.value = languageOptions[languageSelectedIndex.intValue]
@@ -429,7 +433,8 @@ fun SettingsColumn(
                 contentColor = buttonTextColor.value,
                 disabledContainerColor = buttonDisabledColor.value,
                 disabledContentColor = disabledContentColor.value
-            )
+            ),
+            shape = RoundedCornerShape(18.dp)
 
         ) {
             Text("Save")
@@ -608,7 +613,12 @@ fun SettingsColumn(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(modifier = Modifier.width(8.dp))
-            Text("UDP/TCP DNS Server:", color = genericTextColor.value)
+            Text(
+                "UDP/TCP DNS Server:",
+                modifier = Modifier.weight(0.35f),
+                maxLines = 2,
+                color = genericTextColor.value
+            )
             TextField(
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done
@@ -633,9 +643,9 @@ fun SettingsColumn(
                 placeholder = {
                     Text("Insert IPv4 or IPv6", color = genericTextColor.value)
                 },
-                modifier = modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 20.dp)
+                modifier = Modifier
+                    .weight(0.65f)
+                    .heightIn(min = 56.dp)
             )
 
         }
@@ -682,7 +692,12 @@ fun SettingsColumn(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(modifier = Modifier.width(8.dp))
-            Text("POW HostName:", color = genericTextColor.value)
+            Text(
+                "POW HostName:",
+                modifier = Modifier.weight(0.35f),
+                maxLines = 2,
+                color = genericTextColor.value
+            )
             TextField(
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done
@@ -707,9 +722,9 @@ fun SettingsColumn(
                 placeholder = {
                     Text("Insert Hostname", color = genericTextColor.value)
                 },
-                modifier = modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 20.dp)
+                modifier = Modifier
+                    .weight(0.65f)
+                    .heightIn(min = 56.dp)
             )
 
         }
@@ -722,7 +737,12 @@ fun SettingsColumn(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(modifier = Modifier.width(8.dp))
-            Text("POW DNSName:", color = genericTextColor.value)
+            Text(
+                "POW DNSName:",
+                modifier = Modifier.weight(0.35f),
+                maxLines = 2,
+                color = genericTextColor.value
+            )
             TextField(
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done
@@ -747,9 +767,9 @@ fun SettingsColumn(
                 placeholder = {
                     Text("Insert Hostname, IPv4 or IPv6", color = genericTextColor.value)
                 },
-                modifier = modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 20.dp)
+                modifier = Modifier
+                    .weight(0.65f)
+                    .heightIn(min = 56.dp)
             )
 
         }
@@ -763,7 +783,12 @@ fun SettingsColumn(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(modifier = Modifier.width(8.dp))
-            Text("API HostName:", color = genericTextColor.value)
+            Text(
+                "API HostName:",
+                modifier = Modifier.weight(0.35f),
+                maxLines = 2,
+                color = genericTextColor.value
+            )
             TextField(
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done
@@ -788,9 +813,9 @@ fun SettingsColumn(
                 placeholder = {
                     Text("Insert Hostname", color = genericTextColor.value)
                 },
-                modifier = modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 20.dp)
+                modifier = Modifier
+                    .weight(0.65f)
+                    .heightIn(min = 56.dp)
             )
 
         }
@@ -803,7 +828,12 @@ fun SettingsColumn(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(modifier = Modifier.width(8.dp))
-            Text("API DNSName:", color = genericTextColor.value)
+            Text(
+                "API DNSName:",
+                modifier = Modifier.weight(0.35f),
+                maxLines = 2,
+                color = genericTextColor.value
+            )
             TextField(
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done
@@ -828,9 +858,9 @@ fun SettingsColumn(
                 placeholder = {
                     Text("Insert Hostname, IPv4 or IPv6", color = genericTextColor.value)
                 },
-                modifier = modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 20.dp)
+                modifier = Modifier
+                    .weight(0.65f)
+                    .heightIn(min = 56.dp)
             )
 
         }
@@ -996,4 +1026,3 @@ fun SettingsColumn(
 
     }
 }
-

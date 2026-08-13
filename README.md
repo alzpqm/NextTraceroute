@@ -12,6 +12,9 @@ Enter target address (IPv4, IPv6, Hostname and URL), press run, and enjoy!
 
 支持IPv4、IPv6、域名输入和URL提取域名，点击运行。
 
+The Android client is compatible with NextTrace core/API v1.7.2 and uses the
+legacy v3 WebSocket/PoW API flow, which does not require a user token.
+
 # Get This App
 
 <a href='https://play.google.com/store/apps/details?id=com.surfaceocean.nexttraceroute&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' width="256" height="96" src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/></a>

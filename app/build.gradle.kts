@@ -47,8 +47,8 @@ extensions.configure<ApplicationExtension> {
         minSdk = 23
         //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.1.6"
+        versionCode = 17
+        versionName = "0.1.6-pre.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -58,6 +58,10 @@ extensions.configure<ApplicationExtension> {
     }
 
     buildTypes {
+        debug {
+            // Keep a locally built debug APK installable beside the store/F-Droid build.
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("release")

@@ -79,6 +79,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.math.BigInteger
 import java.net.InetAddress
+import java.net.URI
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
@@ -91,6 +92,33 @@ const val IPV6_IDENTIFIER = "IPv6"
 const val HOSTNAME_IDENTIFIER = "Hostname"
 const val ERROR_IDENTIFIER = "ERR"
 const val MAGIC_UUID = "e3ee9949-bd5f-401c-8a57-395a98ed40ee"
+const val NEXTTRACE_CORE_VERSION = "1.7.2"
+
+/**
+ * Converts a pasted URL into the host that the traceroute engine understands.
+ * Keep the text field untouched while the user is typing; normalize only when
+ * a trace starts so partial URLs are not unexpectedly rewritten.
+ */
+fun normalizeTargetInput(input: String): String {
+    val value = input.trim()
+    if (value.isEmpty()) return ""
+
+    val hasScheme = Regex("^[a-zA-Z][a-zA-Z0-9+.-]*://").containsMatchIn(value)
+    val uri = runCatching {
+        URI(if (hasScheme) value else "https://$value")
+    }.getOrNull()
+    val host = uri?.host?.removePrefix("[")?.removeSuffix("]")
+    if (!host.isNullOrBlank()) return host
+
+    return value
+        .substringAfter("//", value)
+        .substringBefore('/')
+        .substringBefore('?')
+        .substringBefore('#')
+        .removePrefix("[")
+        .removeSuffix("]")
+        .trim()
+}
 
 val RESERVED_IPV4_CIDR = mapOf(
     "0.0.0.0/8" to "RFC1122",
@@ -276,7 +304,6 @@ class TracerouteHandler {
         return (powHandler(factor) + powHandler(challenge.divide(factor))).sorted().toMutableList()
     }
 
-
     @Composable
     fun MainWSHandler(
         threadMutex: Mutex,
@@ -288,7 +315,7 @@ class TracerouteHandler {
         gridDataList: MutableList<MutableList<MutableList<MutableState<String>>>>,
         currentLanguage: MutableState<String>,
         traceMapThreadsMapList: MutableList<List<MutableMap<String, Any?>>>,
-        insertion: MutableState<String>, //testAPIText: MutableState<String>,
+        insertion: MutableState<String>,
         isAPIFinished: MutableState<Boolean>,
     ) {
         LaunchedEffect(Unit) {
@@ -342,7 +369,7 @@ class TracerouteHandler {
                             .build()
                         val getAPIHeaders = mapOf(
                             "Host" to apiHostName.value,
-                            "User-Agent" to "NextTrace v5.1.4/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME,
+                            "User-Agent" to "NextTrace v$NEXTTRACE_CORE_VERSION/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME,
                             "Authorization" to "Bearer " + apiToken.value,
                         )
                         val getAPIURL = "wss://" + apiHostName.value + "/v3/ipGeoWs"
@@ -644,7 +671,7 @@ class TracerouteHandler {
                                         .build()
                                     val getAPIHeaders = mapOf(
                                         "Host" to apiHostName.value,
-                                        "User-Agent" to "NextTrace v5.1.4/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME,
+                                        "User-Agent" to "NextTrace v$NEXTTRACE_CORE_VERSION/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME,
                                         "Authorization" to "Bearer " + apiToken.value,
                                     )
                                     val getAPIURL = "wss://" + apiHostName.value + "/v3/ipGeoWs"
@@ -813,7 +840,7 @@ class TracerouteHandler {
                                     val getPOWHeaders = mapOf(
                                         //"Authorization" to "Bearer ",
                                         "Host" to apiHostNamePOW.value,
-                                        "User-Agent" to "NextTrace v5.1.4/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME
+                                        "User-Agent" to "NextTrace v$NEXTTRACE_CORE_VERSION/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME
                                     )
                                     val getPOWURL =
                                         "https://" + apiHostNamePOW.value + "/v3/challenge/request_challenge"
@@ -876,7 +903,7 @@ class TracerouteHandler {
                                                     )
                                                 val submitPOWHeaders = mapOf(
                                                     "Host" to apiHostNamePOW.value,
-                                                    "User-Agent" to "NextTrace v5.1.4/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME,
+                                                    "User-Agent" to "NextTrace v$NEXTTRACE_CORE_VERSION/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME,
                                                     "Content-Length" to submitPOWBody.contentLength()
                                                         .toString(),
                                                     "Content-Type" to "application/json"
@@ -1190,7 +1217,6 @@ class TracerouteHandler {
                         }
                         tracerouteThreadsIntList.add(0)
                     }
-
                 }
             }
 
@@ -1233,7 +1259,6 @@ class TracerouteHandler {
                 traceMapThreadsMapList = traceMapThreadsMapList,
                 isAPIFinished = isAPIFinished,
                 insertion = insertion,
-                //testAPIText = testAPIText
             )
 
 
@@ -1278,14 +1303,16 @@ class TracerouteHandler {
                         }
                         tempList.sortBy { it[0]["TTL"] as? Int ?: 0 }
                         try {
-                            val customDns =
-                                Dns { InetAddress.getAllByName(preferredAPIIp.value).toList() }
-                            val client = OkHttpClient.Builder()
+                            val clientBuilder = OkHttpClient.Builder()
                                 .connectTimeout(5, TimeUnit.SECONDS)
                                 .readTimeout(5, TimeUnit.SECONDS)
                                 .writeTimeout(5, TimeUnit.SECONDS)
-                                .dns(customDns)
-                                .build()
+                            if (preferredAPIIp.value.isNotBlank()) {
+                                clientBuilder.dns {
+                                    InetAddress.getAllByName(preferredAPIIp.value).toList()
+                                }
+                            }
+                            val client = clientBuilder.build()
                             val submitTraceMapList = mapOf(
                                 "Hops" to tempList,
                                 "TraceMapUrl" to ""
@@ -1298,7 +1325,7 @@ class TracerouteHandler {
                                 submitTraceMapJson.toRequestBody(submitTraceMapType)
                             val submitTraceMapHeaders = mapOf(
                                 "Host" to apiHostName.value,
-                                "User-Agent" to "NextTrace v5.1.4/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME,
+                                "User-Agent" to "NextTrace v$NEXTTRACE_CORE_VERSION/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME,
                                 "Content-Length" to submitTraceMapBody.contentLength().toString(),
                                 "Content-Type" to "application/json"
                             )
