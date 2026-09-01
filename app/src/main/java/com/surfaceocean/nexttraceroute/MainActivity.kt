@@ -2,8 +2,8 @@
 
 NextTraceroute, an Android traceroute app using Nexttrace API
 Copyright (C) 2024-2026 surfaceocean
-Email: r2qb8uc5@protonmail.com
-GitHub: https://github.com/nxtrace/NextTraceroute
+Project: https://github.com/alzpqm/NextTraceroute
+Upstream: https://github.com/nxtrace/NextTraceroute
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -120,6 +120,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -452,8 +454,8 @@ fun AboutPage(
                     BuildConfig.VERSION_NAME + ", an Android traceroute app using Nexttrace API\n" +
                     "NextTrace core/API compatibility: v" + NEXTTRACE_CORE_VERSION + "\n" +
                     "Copyright (C) 2024-2026 surfaceocean\n" +
-                    "Email: r2qb8uc5@protonmail.com\n" +
-                    "GitHub: https://github.com/nxtrace/NextTraceroute\n" +
+                    "Project: https://github.com/alzpqm/NextTraceroute\n" +
+                    "Upstream: https://github.com/nxtrace/NextTraceroute\n" +
                     "This program is free software: you can redistribute it and/or modify\n" +
                     "it under the terms of the GNU General Public License as published by\n" +
                     "the Free Software Foundation, either version 3 of the License, or\n" +
@@ -973,11 +975,11 @@ fun MainColumn(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
-                    modifier = Modifier.heightIn(min = 56.dp),
+                    modifier = Modifier.height(64.dp),
                     enabled = isSearchBarEnabled.value,
                     onClick = { isButtonClicked.value = true },
-                    shape = RoundedCornerShape(18.dp),
-                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isSearchBarEnabled.value) buttonEnabledColor.value else buttonDisabledColor.value,
                         contentColor = buttonTextColor.value,
@@ -1346,6 +1348,7 @@ fun SearchBar(
     // var searchText by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
     OutlinedTextField(
+        enabled = isSearchBarEnabled.value,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
         keyboardActions = KeyboardActions(
             onGo = {
@@ -1356,13 +1359,15 @@ fun SearchBar(
             }
         ),
         singleLine = true,
-        textStyle = TextStyle(color = genericTextColor.value),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(
+            color = genericTextColor.value
+        ),
         value = onSearchResults.value,
-        onValueChange = {
+        onValueChange = { input ->
             if (isSearchBarEnabled.value) {
-                onSearchResults.value = it
-                onSearchResults.value = onSearchResults.value.replace("\n", "").trim()
-
+                // Keep editing stable: normalization and trimming happen only when a trace starts.
+                // Mutating the value twice here used to reset the cursor on every keystroke.
+                onSearchResults.value = input.filterNot { it == '\n' || it == '\r' }
             }
         },
         leadingIcon = {
@@ -1371,32 +1376,44 @@ fun SearchBar(
                 contentDescription = "Target"
             )
         },
-        trailingIcon = if (onSearchResults.value.isNotEmpty()) {
-            {
-                IconButton(onClick = { onSearchResults.value = "" }) {
-                    Icon(Icons.Filled.Clear, contentDescription = "Clear target")
+        trailingIcon = {
+            // Always reserve the same trailing slot so the first character cannot move the text.
+            Box(
+                modifier = Modifier
+                    .width(48.dp)
+                    .height(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (onSearchResults.value.isNotEmpty()) {
+                    IconButton(onClick = { onSearchResults.value = "" }) {
+                        Icon(Icons.Filled.Clear, contentDescription = "Clear target")
+                    }
                 }
             }
-        } else {
-            null
         },
         colors = OutlinedTextFieldDefaults.colors(
             unfocusedContainerColor = backgroundColor.value,
             focusedContainerColor = backgroundColor.value,
+            disabledContainerColor = backgroundColor.value,
             focusedTextColor = genericTextColor.value,
             unfocusedTextColor = genericTextColor.value,
+            disabledTextColor = genericTextColor.value,
             focusedBorderColor = buttonEnabledColor.value,
             unfocusedBorderColor = borderColor.value,
+            disabledBorderColor = borderColor.value,
             cursorColor = buttonEnabledColor.value
         ),
         placeholder = {
-            Text("example.com, IPv4, IPv6 or URL", color = genericTextColor.value)
-        },
-        label = {
-            Text("Target")
+            Text(
+                text = "Domain, IP or URL",
+                color = genericTextColor.value.copy(alpha = 0.7f),
+                maxLines = 1
+            )
         },
         modifier = modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .height(64.dp)
+            .semantics { contentDescription = "Trace target" },
         shape = RoundedCornerShape(20.dp)
     )
 

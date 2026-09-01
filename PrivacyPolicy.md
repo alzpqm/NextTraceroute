@@ -1,32 +1,44 @@
-NextTraceroute
+# NextTraceroute 隱私權政策
 
-PRIVACY POLICY
+最後更新日期：2026 年 9 月 2 日
 
-Last updated: 27-April-2024
+本政策說明 NextTraceroute Android 應用程式如何處理資料。若您不同意本政策，請勿使用本應用程式。
 
-NextTraceroute respects your privacy and is committed to the protection of it. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application "NextTraceroute" (later referred as the/this "Application") for Android™ mobile devices.
+## 應用程式本身處理的資料
 
-IF YOU DO NOT AGREE WITH THE TERMS OF THIS PRIVACY POLICY, PLEASE DO NOT ACCESS THE APPLICATION.
+NextTraceroute 不要求註冊帳號，不要求使用者提供 API Token，也不含廣告或分析服務。
 
-We reserve the right to make changes to this Privacy Policy at any time and for any reason. We will alert you about any changes by updating the "Last updated" date of this Privacy Policy. You are encouraged to periodically review this Privacy Policy to stay informed of updates. You will be deemed to have been made aware of, will be subject to, and will be deemed to have accepted the changes in any revised Privacy Policy by your continued use of the Application after the date such revised Privacy Policy is posted.
-This Privacy Policy does not apply to the third-party online/mobile store from which you install the Application which may also collect and use data about you. We are not responsible for any of the data collected by any such third party.
+您輸入的查詢目標、應用程式設定及追蹤結果會儲存在裝置本機，用於執行路由追蹤、保留偏好設定及提供歷史紀錄功能。您可以在應用程式內刪除歷史紀錄，也可以透過 Android 系統清除應用程式資料。
 
-Note: This Privacy Policy is not the same as the Terms and Conditions agreement. The Terms and Conditions of the Application are located at https://github.com/nxtrace/NextTraceroute/blob/master/LICENSE.
-# 1.  COLLECTION OF PERSONAL INFORMATION
-## 1.1 User Provided Information
+依裝置與 Android 系統備份設定，本機資料可能由使用者所選的系統備份服務備份或移轉。本專案無法讀取或控制該備份服務所保存的內容。
 
-The Application does not require any user registration and does not require the user to provide any personal information.
-The User Provided Data is the information you provide directly within the Application.
+## 第三方網路服務
 
-## 1.2 Automatically Collected Information
+路由追蹤功能需要連線至 NextTrace API。該服務可能接收或處理：
 
-The Application itself does not collect any personal information. However, it utilizes the NextTrace API (hosted at nxtrace.org) which is not managed by the developer of the Application. The NextTrace API collects IP addresses related to you, your target request, and all intermediate traceroute hops. It also infers and collects your approximate location based on these IP addresses. This information is gathered by The NextTrace API for the essential functionality of route tracing and analysis. If you do not consent to the collection of your personal information by the NextTrace API, you may change the API's domain name in the settings page before using the application. Please be advised that we do not guarantee the performance or reliability of any third-party API domains that you configure. Additionally, the basic functionality of the Application involves querying third-party DNS servers with the domain name information you provide and that is specified on the settings page. These DNS servers are not managed by the developers of the Application and may collect your IP address and DNS query records. If you do not consent to these DNS servers collecting your personal information, you may change the DNS server address in the settings page before using the Application. Please be advised that we do not guarantee the performance or reliability of any third-party DNS servers that you configure.
+- 您連線時的來源 IP 位址
+- 您指定的網域名稱或 IP 位址
+- 路由追蹤經過的中繼節點 IP 位址
+- 由 IP 位址推測的網路業者與概略地理資訊
 
-# 2. USE OF YOUR INFORMATION
-The Application is free software, and we do not derive any income from it. The Application itself does not share or sell any data to third parties. However, the basic functionality of the Application requires the use of third-party APIs and tools, as detailed in Chapter 1 'COLLECTION OF PERSONAL INFORMATION'.
+網域名稱解析功能會查詢您在設定中選擇的 DNS 或 DoH 服務。該服務可能接收您的來源 IP 位址與 DNS 查詢內容。
 
-# 3. DISCLOSURE OF YOUR INFORMATION
-Your information (if any) may be disclosed only if needed to respond to legal requirements by any applicable law, rule, or regulation to protect the rights, property, and safety of others.
+NextTrace API、DNS 與 DoH 服務均由第三方營運，其資料保存、使用與揭露方式受各服務自己的政策約束。本專案不控制這些第三方服務，也不保證其可用性、效能或資料正確性。您可以在設定中更換服務位址，但必須自行評估替代服務的可信度。
 
-# 4. HOW TO CONTACT US
-You may contact us with any questions, comments, or complaints, about this Privacy Policy or our privacy practices via email: r2qb8uc5@protonmail.com or our github page: https://github.com/nxtrace/NextTraceroute
+## 資料分享與銷售
+
+本應用程式不會出售個人資料。除執行路由追蹤與名稱解析所必要的第三方網路請求外，本應用程式不會主動將本機歷史紀錄或設定傳送給本專案維護者。
+
+當您主動使用分享或複製功能時，內容會交由 Android 系統剪貼簿或您選擇的其他應用程式處理。
+
+## 政策變更
+
+本政策可能因功能、第三方服務或法規要求而更新。更新時會修改本頁的最後更新日期；請定期查閱最新版本。
+
+## 聯絡方式
+
+如對本政策有疑問，請透過本專案的 [GitHub Issues](https://github.com/alzpqm/NextTraceroute/issues) 聯絡。提交問題時請勿公開 Token、密碼、裝置序號、私人 IP、真實姓名、真實電子郵件或其他敏感資料。
+
+## 授權條款
+
+本應用程式的授權條款請參閱本專案的 [LICENSE](LICENSE)。

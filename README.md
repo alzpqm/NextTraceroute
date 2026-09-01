@@ -1,108 +1,78 @@
-# NextTraceroute 
+# NextTraceroute
 
-NextTraceroute is a root-free Android route tracing application that defaults to using the NextTrace API.
+NextTraceroute 是一款不需 Root 權限的 Android 路由追蹤應用程式。輸入網域名稱、IPv4、IPv6 或網址後，即可查看每一跳的延遲、網路業者與地理資訊。
 
-NextTraceroute，一款默认使用NextTrace API的免root安卓版路由跟踪应用。
+這是持續維護中的 Android 用戶端分支，目前穩定版為 **0.2.0**。
 
-# Usage
+## 主要功能
 
-[Releases](https://github.com/alzpqm/NextTraceroute/releases)
+- 支援網域名稱、IPv4、IPv6 與網址輸入
+- 相容 NextTrace 核心與 API 1.7.2
+- 預設使用免 Token 的 v3 WebSocket／PoW 流程
+- Material 3 介面、深色模式、橫向畫面與無邊界顯示
+- 即時顯示追蹤進度，並可隨時停止
+- 保存、搜尋、分享與刪除本機追蹤紀錄
+- 支援 TraceMap、UDP／TCP DNS 與 DoH
 
-Enter target address (IPv4, IPv6, Hostname and URL), press run, and enjoy!
+## 系統需求
 
-支持IPv4、IPv6、域名输入和URL提取域名，点击运行。
+- Android 8.0（API 26）或更新版本
+- 目前以 Android 17（API 37）建置與測試
+- 需要網路連線
 
-The Android client is compatible with NextTrace core/API v1.7.2 and uses the
-legacy v3 WebSocket/PoW API flow, which does not require a user token.
+不再支援 Android 7.1 及更舊版本。
 
-Version 0.2.0 targets Android 17 (API 37), supports Android 8.0 and newer,
-and uses a Material 3 adaptive interface.
+## 下載
 
-# Get This App
+請從本專案的 [GitHub 發佈頁面](https://github.com/alzpqm/NextTraceroute/releases) 下載最新版本。
 
-<a href='https://play.google.com/store/apps/details?id=com.surfaceocean.nexttraceroute&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' width="256" height="96" src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/></a>
-<a href='https://apt.izzysoft.de/packages/com.surfaceocean.nexttraceroute'><img alt='Get it on IzzyOnDroid' width="256" height="96" src='https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png'/></a>
-[<img src="https://f-droid.org/badge/get-it-on.png"
-    alt="Get it on F-Droid"
-    height="96">](https://f-droid.org/packages/com.surfaceocean.nexttraceroute)
-# Contact
+其他應用程式商店可能仍提供舊版或由不同維護者發佈的版本，不代表本維護分支的最新狀態。
 
-The following are all the social media and contact methods of the main maintainer of this project：
+## 使用方式
 
-以下为本项目主要维护者的所有社交媒体及联系方式：
+1. 輸入網域名稱、IP 位址或完整網址。
+2. 點選「Run」或鍵盤上的前往按鍵。
+3. 等待追蹤完成；進行中可點選「Stop」。
+4. 完成後可查看地圖、複製結果，或在歷史紀錄中再次開啟。
 
-[r2qb8uc5@protonmail.com](mailto:r2qb8uc5@protonmail.com)
+一般使用者不需要設定 API Token。應用程式會依 NextTrace 的 PoW 流程取得工作階段所需的臨時授權。
 
-[Telegram channel](https://t.me/nexttraceroute)
+## 畫面
 
-# FAQ
+<p align="center">
+  <img src="pic/home-dark.png" width="320" alt="NextTraceroute 深色模式首頁">
+</p>
 
-* Q: Why does the app return "IPv4 and IPv6 native ping failed! Using linux api instead. (Unstable)"?
+## 隱私
 
-  问：为什么程序返回“IPv4 and IPv6 native ping failed! Using linux api instead. (Unstable)”
-  
-  A: By default, user space Android programs are not allowed to use raw sockets. This program currently uses the ping and ping6 programs in the Linux system. This alert means that your Android device does not support the system's native ping and ping6 programs; therefore, this application cannot be used at this time. A root-free route tracing feature based on the Linux API is still under development.
+應用程式本身不含廣告或分析服務，也不要求註冊帳號。路由追蹤必須連線至 NextTrace API 與所選 DNS 服務，這些第三方服務可能接收來源 IP、查詢目標及路由節點資訊。詳細內容請參閱[隱私權政策](PrivacyPolicy.md)。
 
-  答：默认情况下，用户空间的安卓程序不允许使用原始套接字。本程序目前使用Linux系统自带的ping和ping6程序，这个警告表明您的安卓设备不支持系统原生的ping和ping6程序，因此目前无法使用该程序。基于Linux API的免root路由追踪功能仍在开发中。
+## 問題回報
 
-* Q: Why do some anti malware programs report this application as a virus (e.g. Android:Evo-gen [Trj])?
+請使用本專案的 [GitHub Issues](https://github.com/alzpqm/NextTraceroute/issues) 回報錯誤或提出功能建議。回報時請勿附上 Token、密碼、裝置序號、私人 IP、真實姓名、真實電子郵件或其他敏感資料。
 
-  问：为什么有的杀毒软件报告本应用是病毒？（例如：Android:Evo-gen [Trj]）？
-  
-  A: This could be a false alarm by automatic scans. And we have reported this to related anti malware providers. Please ensure that your virus database is updated to the latest version. Only the binary software download methods mentioned on this GitHub page are officially released by the author. Please be cautious of this software from other sources.
+## 建置
 
-  答：这可能是自动扫描的误报。我们已经向相关的反恶意软件提供商报告了这个问题，请确保您的病毒库更新到最新版本。只有此GitHub页面提到的二进制软件下载方法才是作者发布的，请小心其他来源的此软件。
+需要 JDK 21 與 Android SDK 37：
 
-* Q: Why are there no geographical locations displayed?
-
-  问：为什么地理位置没显示？
-  
-  A: If error messages like "Too many requests" are displayed, try again later due to server rate limiting. If there are no error messages, try changing your DNS server, or switching the DNS mode to DoH in the settings.
-
-  答：如果显示"Too many requests"就过一会再试，服务器有速率限制。如果没有错误信息就在设置里更换DNS服务器，或把DNS模式改为DoH.
-
-# Example Screenshot
-![example1](./pic/1.png)
-![example2](./pic/2.png)
-![examplesettings](./pic/settings.png)
-![exampleHistory](./pic/history.jpg)
-
-# LICENSE
-```
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program [here](./LICENSE).  If not, see <https://www.gnu.org/licenses/>.
-
-Disclaimer: The NextTrace API (hosted at nxtrace.org) used by default in this program is not managed by the program's developer.
-We do not guarantee the performance, accuracy, or any other aspect of the NextTrace API,
-nor do we endorse, approve, or guarantee the results returned by the NextTrace API.
-Users may customize the API server address themselves.
-
-This project uses the libraries listed below. Detailed information can be found in the LICENSE file of this project.
-
-The "dnsjava" library is licensed under the BSD 3-Clause License.
-
-The "seancfoley/IPAddress" library is licensed under the Apache 2.0 License.
-
-The "square/okhttp" library is licensed under the Apache 2.0 License.
-
-The "gson" library is licensed under the Apache 2.0 License.
-
-The "slf4j-android" library is licensed under the MIT License.
-
-The "androidx" library is licensed under the Apache 2.0 License.
-
-The "Compose Color Picker" library is licensed under the MIT License.
-
+```bash
+./gradlew testDebugUnitTest lintDebug assembleDebug
 ```
 
-[Privacy Policy](./PrivacyPolicy.md)
+推送原始碼前必須執行來源隱私掃描：
+
+```bash
+scripts/privacy-scan.sh
+```
+
+正式 APK 與 AAB 建置完成後，還必須執行產物隱私掃描：
+
+```bash
+scripts/privacy-scan.sh --artifacts
+```
+
+掃描未通過時禁止推送、建立標籤或發佈版本。
+
+## 授權
+
+本專案依 [GNU 通用公眾授權條款第三版](LICENSE) 發佈。NextTrace API 由第三方營運，本專案不保證其可用性、效能或資料正確性。
