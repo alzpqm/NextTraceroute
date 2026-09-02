@@ -9,7 +9,7 @@
 - 上游：`origin` → `https://github.com/nxtrace/NextTraceroute.git`
 - 維護 Fork：`fork` → `https://github.com/alzpqm/NextTraceroute.git`
 - 目前開發分支：`codex/nexttrace-1.7.2-ui`
-- 穩定版：`v0.2.0`，commit `5933503`
+- 目前正式版目標：`v0.2.1`；發佈完成後須以遠端 tag 與 Release 再次核實。
 - 發佈與提交只能使用 GitHub 帳號名稱，以及 GitHub 提供的 noreply email；不可出現真名或真實 email。
 - 每次 push、tag 或 GitHub Release 前都必須完成隱私掃描。發現本機使用者名稱、絕對路徑、裝置序號、PIN、Token、密碼、私鑰、keystore、真實姓名或真實 email 時禁止發佈。
 - 隱私掃描必須涵蓋工作樹、待推送 commits、tag/commit 作者資料、APK/AAB 簽章憑證與 Release 中繼資料；掃描結果須更新在本檔。
@@ -25,8 +25,8 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行應用版本：`versionName = 0.2.0`、`versionCode = 18`
-- 下一個公開版本必須高於 0.2.0，不可再命名為 0.16 或造成比原版更舊的觀感。
+- 現行應用版本：`versionName = 0.2.1`、`versionCode = 19`
+- 後續公開版本必須高於 0.2.1，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
 ## NextTrace 後端
@@ -55,6 +55,7 @@
 - GitHub repository 描述、0.2.0 Release notes 與已淘汰預覽版 Release notes 已改為正體中文，Issues 已啟用。尚未建立新 Release。
 - 原始碼與 LICENSE 保留 `surfaceocean` 著作權署名，但已移除 email；目前維護入口指向 `alzpqm/NextTraceroute`，並保留上游連結。
 - 已加入 `scripts/privacy-scan.sh`；發佈來源前執行無參數模式，建置正式 APK/AAB 後執行 `--artifacts`。
+- 0.2.1 正式版已完成建置與發佈前檢查；發佈完成後須核實遠端 tag、Release assets、作者與雜湊。
 
 ## 驗證紀錄
 
@@ -64,3 +65,6 @@
 - 2026-09-02：接手檔初稿曾含本機絕對路徑與裝置序號，但在提交前已移除；後續必須確認完整掃描結果為零阻擋項目。
 - 2026-09-02：來源隱私掃描通過，GitHub Secret Scanning 為 0 alerts；既有 0.2.0 APK/AAB 解壓掃描通過，簽章 Subject 僅為 `CN=alzpqm, O=alzpqm`。
 - 2026-09-02：工作目錄的同步機制曾產生檔名帶 ` 2` 的 Markdown、Gradle 與 class 副本。舊 Markdown 副本曾含已移除的 email，已在提交前刪除；class 副本曾造成 D8 duplicate class，執行 Gradle `clean` 後恢復。每次提交前都要檢查 `git status --untracked-files=all` 與名稱帶 ` 2` 的檔案。
+- 2026-09-02：0.2.1／versionCode 19 已成功安裝到 API 37 模擬器與 Android 14 實機；實機確認套件版本並成功開啟首頁。
+- 2026-09-02：0.2.1 Release APK/AAB 與 lintVital 建置成功（59 tasks）；APK manifest 為 application ID `com.surfaceocean.nexttraceroute`、target/compile SDK 37。
+- 2026-09-02：0.2.1 產物隱私掃描通過，APK 簽章 Subject 為 `CN=alzpqm, O=alzpqm`。APK SHA-256：`e28a50ce66c56a45edc609fe4ffac556103ec6baecd169907e977f6ceb2a2164`；AAB SHA-256：`c3385873340f025629a81ba7dbfbdd94b8cfebb5f218374646a95b7bbb1693f0`。
