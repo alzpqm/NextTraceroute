@@ -9,7 +9,7 @@
 - 上游：`origin` → `https://github.com/nxtrace/NextTraceroute.git`
 - 維護 Fork：`fork` → `https://github.com/alzpqm/NextTraceroute.git`
 - 目前開發分支：`codex/nexttrace-1.7.2-ui`
-- 目前正式版目標：`v0.2.1`；發佈完成後須以遠端 tag 與 Release 再次核實。
+- 目前穩定版：`v0.2.1`，release commit `750a517`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.1`。
 - 發佈與提交只能使用 GitHub 帳號名稱，以及 GitHub 提供的 noreply email；不可出現真名或真實 email。
 - 每次 push、tag 或 GitHub Release 前都必須完成隱私掃描。發現本機使用者名稱、絕對路徑、裝置序號、PIN、Token、密碼、私鑰、keystore、真實姓名或真實 email 時禁止發佈。
 - 隱私掃描必須涵蓋工作樹、待推送 commits、tag/commit 作者資料、APK/AAB 簽章憑證與 Release 中繼資料；掃描結果須更新在本檔。
@@ -55,7 +55,7 @@
 - GitHub repository 描述、0.2.0 Release notes 與已淘汰預覽版 Release notes 已改為正體中文，Issues 已啟用。尚未建立新 Release。
 - 原始碼與 LICENSE 保留 `surfaceocean` 著作權署名，但已移除 email；目前維護入口指向 `alzpqm/NextTraceroute`，並保留上游連結。
 - 已加入 `scripts/privacy-scan.sh`；發佈來源前執行無參數模式，建置正式 APK/AAB 後執行 `--artifacts`。
-- 0.2.1 正式版已完成建置與發佈前檢查；發佈完成後須核實遠端 tag、Release assets、作者與雜湊。
+- 0.2.1 正式版已完成建置、發佈與遠端核實；後續繼續研究 UI、設定頁面與未解 bugs，下一個公開版本必須高於 0.2.1。
 
 ## 驗證紀錄
 
@@ -68,3 +68,5 @@
 - 2026-09-02：0.2.1／versionCode 19 已成功安裝到 API 37 模擬器與 Android 14 實機；實機確認套件版本並成功開啟首頁。
 - 2026-09-02：0.2.1 Release APK/AAB 與 lintVital 建置成功（59 tasks）；APK manifest 為 application ID `com.surfaceocean.nexttraceroute`、target/compile SDK 37。
 - 2026-09-02：0.2.1 產物隱私掃描通過，APK 簽章 Subject 為 `CN=alzpqm, O=alzpqm`。APK SHA-256：`e28a50ce66c56a45edc609fe4ffac556103ec6baecd169907e977f6ceb2a2164`；AAB SHA-256：`c3385873340f025629a81ba7dbfbdd94b8cfebb5f218374646a95b7bbb1693f0`。
+- 2026-09-02：遠端 v0.2.1 為正式版與 latest，作者為 `alzpqm`，tag 解析至 `750a517`，兩個 Release assets 的遠端 digest 與上述雜湊一致，GitHub Secret Scanning 為 0 alerts。
+- 2026-09-02：`.github/workflows/build.yml` 會在 Release 發佈後重複建置並以 `overwrite: true` 覆蓋已驗證資產。本次重複 run 已取消，遠端資產未被改動；下次發佈前必須修正或移除此流程。
