@@ -11,27 +11,10 @@ any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-Disclaimer: The NextTrace API (hosted at nxtrace.org) used by default in this program is not managed by the program's developer.
-We do not guarantee the performance, accuracy, or any other aspect of the NextTrace API,
-nor do we endorse, approve, or guarantee the results returned by the NextTrace API. Users may customize the API server address themselves.
-
-This project uses the libraries listed below. Detailed information can be found in the LICENSE file of this project.
-The "dnsjava" library is licensed under the BSD 3-Clause License.
-The "seancfoley/IPAddress" library is licensed under the Apache 2.0 License.
-The "square/okhttp" library is licensed under the Apache 2.0 License.
-The "gson" library is licensed under the Apache 2.0 License.
-The "slf4j-android" library is licensed under the MIT License.
-The "androidx" library is licensed under the Apache 2.0 License.
-The "Compose Color Picker" library is licensed under the MIT License.
-
 */
-
 
 package com.surfaceocean.nexttraceroute
 
@@ -39,19 +22,18 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -59,970 +41,464 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.godaddy.android.colorpicker.ClassicColorPicker
-import com.godaddy.android.colorpicker.HsvColor
 import com.google.gson.Gson
 import kotlin.math.roundToInt
 
+private val dohServers = listOf(
+    "https://1.1.1.1/dns-query",
+    "https://[2606:4700:4700::1111]/dns-query",
+    "https://8.8.8.8/dns-query",
+    "https://[2001:4860:4860::8888]/dns-query",
+    "https://223.5.5.5/dns-query",
+    "https://doh.pub/dns-query",
+    "https://dns.cloudflare.com/dns-query",
+    "https://dns.adguard-dns.com/dns-query",
+    "https://doh.opendns.com/dns-query",
+    "https://dns.google/dns-query",
+    "https://ordns.he.net/dns-query",
+    "https://dns.quad9.net/dns-query"
+)
 
 @Composable
 fun SettingsColumn(
-    modifier: Modifier = Modifier, context: Context,
+    modifier: Modifier = Modifier,
+    context: Context,
     currentPage: MutableState<String>,
-    currentLanguage: MutableState<String>, isTraceMapEnabled: MutableState<Boolean>,
-    maxTraceTTL: MutableIntState, traceTimeout: MutableState<String>,
-    traceCount: MutableState<String>, currentDNSMode: MutableState<String>,
-    tracerouteDNSServer: MutableState<String>, currentDOHServer: MutableState<String>,
-    apiHostNamePOW: MutableState<String>, apiDNSNamePOW: MutableState<String>,
-    apiHostName: MutableState<String>, apiDNSName: MutableState<String>,
-    borderColor: MutableState<Color>,
-    disabledContentColor: MutableState<Color>,
-    backgroundColor: MutableState<Color>,
-    genericTextColor: MutableState<Color>,
-    navigationIconColor: MutableState<Color>,
-    buttonEnabledColor: MutableState<Color>,
-    buttonDisabledColor: MutableState<Color>,
-    buttonTextColor: MutableState<Color>,
-    resultSNColor: MutableState<Color>,
-    resultASColor: MutableState<Color>,
-    resultPingColor: MutableState<Color>
-
+    currentLanguage: MutableState<String>,
+    isTraceMapEnabled: MutableState<Boolean>,
+    maxTraceTTL: MutableIntState,
+    traceTimeout: MutableState<String>,
+    traceCount: MutableState<String>,
+    currentDNSMode: MutableState<String>,
+    tracerouteDNSServer: MutableState<String>,
+    currentDOHServer: MutableState<String>,
+    apiHostNamePOW: MutableState<String>,
+    apiDNSNamePOW: MutableState<String>,
+    apiHostName: MutableState<String>,
+    apiDNSName: MutableState<String>
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
-    val trHandler = TracerouteHandler()
-    val scrollState = rememberScrollState()
-    val languageExpanded = remember { mutableStateOf(false) }
-    val languageOptions = listOf("Default", "zh", "en")
-    val languageSelectedIndex = remember { mutableIntStateOf(0) }
-    val enableTraceMapCheckedState = remember { mutableStateOf(true) }
-    val maxHopSliderValue = remember { mutableFloatStateOf(30f) }
-    val maxTimeoutSliderValue = remember { mutableFloatStateOf(1f) }
-    val maxPacketCountSliderValue = remember { mutableFloatStateOf(5f) }
-    val dnsModeExpanded = remember { mutableStateOf(false) }
-    val dnsModeOptions = listOf("udp", "tcp", "doh")
-    val dnsModeSelectedIndex = remember { mutableIntStateOf(0) }
-    val dnsServerText = remember { mutableStateOf("") }
-    val dohServersExpanded = remember { mutableStateOf(false) }
-    val dohServersSelectedIndex = remember { mutableIntStateOf(0) }
-    val dohServersOptions = listOf(
-        "https://1.1.1.1/dns-query",
-        "https://[2606:4700:4700::1111]/dns-query",
-        "https://8.8.8.8/dns-query",
-        "https://[2001:4860:4860::8888]/dns-query",
-        "https://223.5.5.5/dns-query",
-        "https://doh.pub/dns-query",
-        "https://dns.cloudflare.com/dns-query",
-        "https://dns.adguard-dns.com/dns-query",
-        "https://doh.opendns.com/dns-query",
-        "https://dns.google/dns-query",
-        "https://ordns.he.net/dns-query",
-        "https://dns.quad9.net/dns-query"
-    )
-    val powHostNameText = remember { mutableStateOf("") }
-    val powDNSNameText = remember { mutableStateOf("") }
-    val apiHostNameText = remember { mutableStateOf("") }
-    val apiDNSNameText = remember { mutableStateOf("") }
-    val borderColorValue = remember { mutableStateOf(Color.Blue) }
-    val disabledContentColorValue = remember { mutableStateOf(Color.Blue) }
-    val backgroundColorValue = remember { mutableStateOf(Color.Blue) }
-    val genericTextColorValue = remember { mutableStateOf(Color.Blue) }
-    val navigationIconColorValue = remember { mutableStateOf(Color.Blue) }
-    val buttonEnabledColorValue = remember { mutableStateOf(Color.Blue) }
-    val buttonDisabledColorValue = remember { mutableStateOf(Color.Blue) }
-    val buttonTextColorValue = remember { mutableStateOf(Color.Blue) }
-    val resultSNColorValue = remember { mutableStateOf(Color.Blue) }
-    val resultASColorValue = remember { mutableStateOf(Color.Blue) }
-    val resultPingColorValue = remember { mutableStateOf(Color.Blue) }
-    val colorPickerExpanded = remember { mutableStateOf(false) }
-    val colorPickerCurrentName = remember { mutableStateOf("borderColorValue") }
-    val colorPickerCurrentColor = remember { mutableStateOf(Color.White) }
-    val colorListExpanded = remember { mutableStateOf(false) }
-    val colorLabels: Map<String, String> = mapOf(
-        "borderColorValue" to "Border Color",
-        "disabledContentColorValue" to "Disabled Content Color",
-        "backgroundColorValue" to "Background Color",
-        "genericTextColorValue" to "Generic Text Color",
-        "navigationIconColorValue" to "Navigation Icon Color",
-        "buttonEnabledColorValue" to "Button Enabled Color",
-        "buttonDisabledColorValue" to "Button Disabled Color",
-        "buttonTextColorValue" to "Button Text Color",
-        "resultSNColorValue" to "Result SN Color",
-        "resultASColorValue" to "Result AS Color",
-        "resultPingColorValue" to "Result Ping Color"
-    )
-    val currentButtonColor = remember { mutableStateOf(Color.Blue) }
+    val tracerouteHandler = remember { TracerouteHandler() }
+    val languageValues = listOf("Default", "zh", "en")
+    val languageLabels = listOf("跟隨系統", "中文", "English")
+    val dnsModeValues = listOf("udp", "tcp", "doh")
+
+    var languageIndex by remember { mutableIntStateOf(0) }
+    var traceMapEnabled by remember { mutableStateOf(true) }
+    var maxHop by remember { mutableFloatStateOf(30f) }
+    var timeout by remember { mutableFloatStateOf(1f) }
+    var packetCount by remember { mutableFloatStateOf(5f) }
+    var dnsModeIndex by remember { mutableIntStateOf(0) }
+    var dnsServer by remember { mutableStateOf("") }
+    var dohServerIndex by remember { mutableIntStateOf(0) }
+    var powHostName by remember { mutableStateOf("") }
+    var powDnsName by remember { mutableStateOf("") }
+    var apiHostNameDraft by remember { mutableStateOf("") }
+    var apiDnsNameDraft by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        languageSelectedIndex.intValue = languageOptions.indexOf(currentLanguage.value)
-        enableTraceMapCheckedState.value = isTraceMapEnabled.value
-        maxHopSliderValue.floatValue = maxTraceTTL.intValue.toFloat()
-        maxTimeoutSliderValue.floatValue = traceTimeout.value.toFloat()
-        maxPacketCountSliderValue.floatValue = traceCount.value.toFloat()
-        dnsModeSelectedIndex.intValue = dnsModeOptions.indexOf(currentDNSMode.value)
-        dnsServerText.value = tracerouteDNSServer.value
-        dohServersSelectedIndex.intValue = dohServersOptions.indexOf(currentDOHServer.value)
-        powHostNameText.value = apiHostNamePOW.value
-        powDNSNameText.value = apiDNSNamePOW.value
-        apiHostNameText.value = apiHostName.value
-        apiDNSNameText.value = apiDNSName.value
-        borderColorValue.value = borderColor.value
-        disabledContentColorValue.value = disabledContentColor.value
-        backgroundColorValue.value = backgroundColor.value
-        genericTextColorValue.value = genericTextColor.value
-        navigationIconColorValue.value = navigationIconColor.value
-        buttonEnabledColorValue.value = buttonEnabledColor.value
-        buttonDisabledColorValue.value = buttonDisabledColor.value
-        buttonTextColorValue.value = buttonTextColor.value
-        resultSNColorValue.value = resultSNColor.value
-        resultASColorValue.value = resultASColor.value
-        resultPingColorValue.value = resultPingColor.value
-
-    }
-    BackHandler {
-        currentPage.value = "main"
+        languageIndex = languageValues.indexOf(currentLanguage.value).coerceAtLeast(0)
+        traceMapEnabled = isTraceMapEnabled.value
+        maxHop = maxTraceTTL.intValue.toFloat()
+        timeout = traceTimeout.value.toFloatOrNull()?.coerceIn(1f, 10f) ?: 1f
+        packetCount = traceCount.value.toFloatOrNull()?.coerceIn(1f, 10f) ?: 5f
+        dnsModeIndex = dnsModeValues.indexOf(currentDNSMode.value).coerceAtLeast(0)
+        dnsServer = tracerouteDNSServer.value
+        dohServerIndex = dohServers.indexOf(currentDOHServer.value).coerceAtLeast(0)
+        powHostName = apiHostNamePOW.value
+        powDnsName = apiDNSNamePOW.value
+        apiHostNameDraft = apiHostName.value
+        apiDnsNameDraft = apiDNSName.value
     }
 
-    if (colorPickerExpanded.value) {
-        AlertDialog(
-            onDismissRequest = {
-                colorPickerExpanded.value = false
-            },
-            title = {
-                Text(text = colorLabels[colorPickerCurrentName.value].toString())
-            },
-            text = {
-                Column {
-                    ClassicColorPicker(
-                        modifier = modifier,
-                        color = HsvColor.from(color = colorPickerCurrentColor.value),
-                        showAlphaBar = true,
-                        onColorChanged = { color: HsvColor ->
-                            colorPickerCurrentColor.value = color.toColor()
-                        })
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        when (colorPickerCurrentName.value) {
-                            "borderColorValue" -> {
-                                borderColorValue.value = colorPickerCurrentColor.value
-                            }
+    fun saveSettings() {
+        val errors = mutableListOf<String>()
+        val cleanDnsServer = dnsServer.trim()
+        val cleanPowHost = powHostName.trim()
+        val cleanPowDns = powDnsName.trim()
+        val cleanApiHost = apiHostNameDraft.trim()
+        val cleanApiDns = apiDnsNameDraft.trim()
 
-                            "disabledContentColorValue" -> {
-                                disabledContentColorValue.value = colorPickerCurrentColor.value
-                            }
+        fun isIp(value: String): Boolean {
+            val type = tracerouteHandler.identifyInput(value)
+            return type == IPV4_IDENTIFIER || type == IPV6_IDENTIFIER
+        }
 
-                            "backgroundColorValue" -> {
-                                backgroundColorValue.value = colorPickerCurrentColor.value
-                            }
+        fun isHostOrIp(value: String): Boolean {
+            val type = tracerouteHandler.identifyInput(value)
+            return type == HOSTNAME_IDENTIFIER || type == IPV4_IDENTIFIER || type == IPV6_IDENTIFIER
+        }
 
-                            "genericTextColorValue" -> {
-                                genericTextColorValue.value = colorPickerCurrentColor.value
-                            }
+        if (!isIp(cleanDnsServer)) errors += "UDP／TCP DNS 伺服器格式無效"
+        if (tracerouteHandler.identifyInput(cleanPowHost) != HOSTNAME_IDENTIFIER) {
+            errors += "PoW 主機名稱格式無效"
+        }
+        if (!isHostOrIp(cleanPowDns)) errors += "PoW DNS 名稱格式無效"
+        if (tracerouteHandler.identifyInput(cleanApiHost) != HOSTNAME_IDENTIFIER) {
+            errors += "API 主機名稱格式無效"
+        }
+        if (!isHostOrIp(cleanApiDns)) errors += "API DNS 名稱格式無效"
 
-                            "navigationIconColorValue" -> {
-                                navigationIconColorValue.value = colorPickerCurrentColor.value
-                            }
+        if (errors.isNotEmpty()) {
+            Toast.makeText(context, errors.joinToString("\n"), Toast.LENGTH_LONG).show()
+            return
+        }
 
-                            "buttonEnabledColorValue" -> {
-                                buttonEnabledColorValue.value = colorPickerCurrentColor.value
-                            }
+        currentLanguage.value = languageValues[languageIndex]
+        isTraceMapEnabled.value = traceMapEnabled
+        maxTraceTTL.intValue = maxHop.roundToInt()
+        traceTimeout.value = timeout.roundToInt().toString()
+        traceCount.value = packetCount.roundToInt().toString()
+        currentDNSMode.value = dnsModeValues[dnsModeIndex]
+        tracerouteDNSServer.value = cleanDnsServer
+        currentDOHServer.value = dohServers[dohServerIndex]
+        apiHostNamePOW.value = cleanPowHost
+        apiDNSNamePOW.value = cleanPowDns
+        apiHostName.value = cleanApiHost
+        apiDNSName.value = cleanApiDns
 
-                            "buttonDisabledColorValue" -> {
-                                buttonDisabledColorValue.value = colorPickerCurrentColor.value
-                            }
+        val settings = mapOf(
+            "currentLanguage" to currentLanguage.value,
+            "isTraceMapEnabled" to isTraceMapEnabled.value,
+            "maxTraceTTL" to maxTraceTTL.intValue.toString(),
+            "traceTimeout" to traceTimeout.value,
+            "traceCount" to traceCount.value,
+            "currentDNSMode" to currentDNSMode.value,
+            "tracerouteDNSServer" to tracerouteDNSServer.value,
+            "currentDOHServer" to currentDOHServer.value,
+            "apiHostNamePOW" to apiHostNamePOW.value,
+            "apiDNSNamePOW" to apiDNSNamePOW.value,
+            "apiHostName" to apiHostName.value,
+            "apiDNSName" to apiDNSName.value
+        )
 
-                            "buttonTextColorValue" -> {
-                                buttonTextColorValue.value = colorPickerCurrentColor.value
-                            }
+        try {
+            context.openFileOutput("settings.json", Context.MODE_PRIVATE).use { output ->
+                output.write(Gson().toJson(settings).toByteArray())
+            }
+            Toast.makeText(context, "設定已儲存", Toast.LENGTH_SHORT).show()
+        } catch (exception: Exception) {
+            Log.e("SettingSaveHandler", "Unable to save settings", exception)
+            Toast.makeText(context, "無法儲存設定", Toast.LENGTH_LONG).show()
+        }
+    }
 
-                            "resultSNColorValue" -> {
-                                resultSNColorValue.value = colorPickerCurrentColor.value
-                            }
+    BackHandler { currentPage.value = "main" }
 
-                            "resultASColorValue" -> {
-                                resultASColorValue.value = colorPickerCurrentColor.value
-                            }
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { currentPage.value = "main" }) {
+                Icon(Icons.Filled.Home, contentDescription = "返回首頁")
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "設定",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "網路探測與服務端選項",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            FilledTonalButton(onClick = ::saveSettings) {
+                Text("儲存")
+            }
+        }
 
-                            "resultPingColorValue" -> {
-                                resultPingColorValue.value = colorPickerCurrentColor.value
-                            }
-
-                            else -> {
-                                borderColorValue.value = colorPickerCurrentColor.value
-                            }
-                        }
-                        colorPickerExpanded.value = false
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = buttonEnabledColor.value,
-                        contentColor = buttonTextColor.value,
-                        disabledContainerColor = buttonDisabledColor.value,
-                        disabledContentColor = disabledContentColor.value
-                    )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            SettingsSection(title = "一般") {
+                ChoiceSetting(
+                    title = "API 回應語言",
+                    selectedLabel = languageLabels[languageIndex],
+                    options = languageLabels,
+                    onSelected = { languageIndex = it }
+                )
+                SettingsDivider()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Ok")
-                }
-            },
-            dismissButton = {
-                Button(
-                    onClick = {
-                        colorPickerExpanded.value = false
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = buttonEnabledColor.value,
-                        contentColor = buttonTextColor.value,
-                        disabledContainerColor = buttonDisabledColor.value,
-                        disabledContentColor = disabledContentColor.value
-                    )
-                ) {
-                    Text("Cancel")
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("顯示路由地圖", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "追蹤完成後產生 TraceMap",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(checked = traceMapEnabled, onCheckedChange = { traceMapEnabled = it })
                 }
             }
-        )
-    }
 
+            SettingsSection(title = "探測參數") {
+                NumberSliderSetting(
+                    title = "最大跳數",
+                    value = maxHop,
+                    valueRange = 1f..255f,
+                    onValueChange = { maxHop = it.roundToInt().toFloat() }
+                )
+                SettingsDivider()
+                NumberSliderSetting(
+                    title = "單一封包逾時",
+                    suffix = " 秒",
+                    value = timeout,
+                    valueRange = 1f..10f,
+                    onValueChange = { timeout = it.roundToInt().toFloat() }
+                )
+                SettingsDivider()
+                NumberSliderSetting(
+                    title = "每跳封包數",
+                    value = packetCount,
+                    valueRange = 1f..10f,
+                    onValueChange = { packetCount = it.roundToInt().toFloat() }
+                )
+            }
+
+            SettingsSection(title = "DNS") {
+                ChoiceSetting(
+                    title = "查詢模式",
+                    selectedLabel = dnsModeValues[dnsModeIndex].uppercase(),
+                    options = dnsModeValues.map { it.uppercase() },
+                    onSelected = { dnsModeIndex = it }
+                )
+                Spacer(Modifier.height(12.dp))
+                SettingsTextField(
+                    label = "UDP／TCP DNS 伺服器",
+                    value = dnsServer,
+                    onValueChange = { dnsServer = it.replace("\n", "") },
+                    onDone = { keyboardController?.hide() }
+                )
+                Spacer(Modifier.height(12.dp))
+                ChoiceSetting(
+                    title = "DNS over HTTPS",
+                    selectedLabel = dohServers[dohServerIndex],
+                    options = dohServers,
+                    onSelected = { dohServerIndex = it }
+                )
+            }
+
+            SettingsSection(
+                title = "進階服務端",
+                supportingText = "一般使用者不需要修改；NextTrace 預設不需要 API Token。"
+            ) {
+                SettingsTextField(
+                    label = "PoW 主機名稱",
+                    value = powHostName,
+                    onValueChange = { powHostName = it.replace("\n", "") },
+                    onDone = { keyboardController?.hide() }
+                )
+                Spacer(Modifier.height(12.dp))
+                SettingsTextField(
+                    label = "PoW DNS 名稱或 IP",
+                    value = powDnsName,
+                    onValueChange = { powDnsName = it.replace("\n", "") },
+                    onDone = { keyboardController?.hide() }
+                )
+                Spacer(Modifier.height(12.dp))
+                SettingsTextField(
+                    label = "API 主機名稱",
+                    value = apiHostNameDraft,
+                    onValueChange = { apiHostNameDraft = it.replace("\n", "") },
+                    onDone = { keyboardController?.hide() }
+                )
+                Spacer(Modifier.height(12.dp))
+                SettingsTextField(
+                    label = "API DNS 名稱或 IP",
+                    value = apiDnsNameDraft,
+                    onValueChange = { apiDnsNameDraft = it.replace("\n", "") },
+                    onDone = { keyboardController?.hide() }
+                )
+            }
+
+            Text(
+                text = "外觀會自動跟隨 Android 的日間／夜間模式與動態色彩。",
+                modifier = Modifier.padding(horizontal = 8.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun SettingsSection(
+    title: String,
+    supportingText: String? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column {
+        Text(
+            text = title,
+            modifier = Modifier.padding(start = 8.dp, bottom = 8.dp),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                if (supportingText != null) {
+                    Text(
+                        text = supportingText,
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(vertical = 14.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+    )
+}
+
+@Composable
+private fun ChoiceSetting(
+    title: String,
+    selectedLabel: String,
+    options: List<String>,
+    onSelected: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = { currentPage.value = "main" }) {
-            Icon(Icons.Filled.Home, contentDescription = "Home", tint = navigationIconColor.value)
-        }
         Text(
-            text = "Settings",
+            text = title,
             modifier = Modifier.weight(1f),
-            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-            color = genericTextColor.value
+            style = MaterialTheme.typography.titleMedium
         )
-        Button(
-            onClick = {
-                var errorText = ""
-                currentLanguage.value = languageOptions[languageSelectedIndex.intValue]
-                isTraceMapEnabled.value = enableTraceMapCheckedState.value
-                maxTraceTTL.intValue = maxHopSliderValue.floatValue.toInt()
-                traceTimeout.value = maxTimeoutSliderValue.floatValue.toInt().toString()
-                traceCount.value = maxPacketCountSliderValue.floatValue.toInt().toString()
-                currentDNSMode.value = dnsModeOptions[dnsModeSelectedIndex.intValue]
-                borderColor.value = borderColorValue.value
-                disabledContentColor.value = disabledContentColorValue.value
-                backgroundColor.value = backgroundColorValue.value
-                genericTextColor.value = genericTextColorValue.value
-                navigationIconColor.value = navigationIconColorValue.value
-                buttonEnabledColor.value = buttonEnabledColorValue.value
-                buttonDisabledColor.value = buttonDisabledColorValue.value
-                buttonTextColor.value = buttonTextColorValue.value
-                resultSNColor.value = resultSNColorValue.value
-                resultASColor.value = resultASColorValue.value
-                resultPingColor.value = resultPingColorValue.value
-                if (trHandler.identifyInput(dnsServerText.value) == IPV4_IDENTIFIER ||
-                    trHandler.identifyInput(dnsServerText.value) == IPV6_IDENTIFIER
-                ) {
-                    tracerouteDNSServer.value = dnsServerText.value
-                } else {
-                    errorText += "Invalid UDP/TCP DNS server, "
-                }
-                currentDOHServer.value = dohServersOptions[dohServersSelectedIndex.intValue]
-                if (trHandler.identifyInput(powHostNameText.value) == HOSTNAME_IDENTIFIER) {
-                    apiHostNamePOW.value = powHostNameText.value
-                } else {
-                    errorText += "Invalid Hostname for POW server, "
-                }
-                if (trHandler.identifyInput(powDNSNameText.value) == IPV4_IDENTIFIER ||
-                    trHandler.identifyInput(powDNSNameText.value) == IPV6_IDENTIFIER ||
-                    trHandler.identifyInput(powDNSNameText.value) == HOSTNAME_IDENTIFIER
-                ) {
-                    apiDNSNamePOW.value = powDNSNameText.value
-                } else {
-                    errorText += "Invalid DNS Hostname for POW server, "
-                }
-
-                if (trHandler.identifyInput(apiHostNameText.value) == HOSTNAME_IDENTIFIER) {
-                    apiHostName.value = apiHostNameText.value
-                } else {
-                    errorText += "Invalid Hostname for API server, "
-                }
-
-                if (trHandler.identifyInput(apiDNSNameText.value) == IPV4_IDENTIFIER ||
-                    trHandler.identifyInput(apiDNSNameText.value) == IPV6_IDENTIFIER ||
-                    trHandler.identifyInput(apiDNSNameText.value) == HOSTNAME_IDENTIFIER
-                ) {
-                    apiDNSName.value = apiDNSNameText.value
-                } else {
-                    errorText += "Invalid DNS Hostname for API server, "
-                }
-
-                if (errorText != "") {
-                    Toast.makeText(context, errorText, Toast.LENGTH_LONG).show()
-                } else {
-                    val savingSettingsMap = mapOf(
-                        "currentLanguage" to currentLanguage.value,
-                        "isTraceMapEnabled" to isTraceMapEnabled.value,
-                        "maxTraceTTL" to maxTraceTTL.intValue.toString(),
-                        "traceTimeout" to traceTimeout.value,
-                        "traceCount" to traceCount.value,
-                        "currentDNSMode" to currentDNSMode.value,
-                        "tracerouteDNSServer" to tracerouteDNSServer.value,
-                        "currentDOHServer" to currentDOHServer.value,
-                        "apiHostNamePOW" to apiHostNamePOW.value,
-                        "apiDNSNamePOW" to apiDNSNamePOW.value,
-                        "apiHostName" to apiHostName.value,
-                        "apiDNSName" to apiDNSName.value,
-                        "borderColor" to borderColor.value.toArgb(),
-                        "disabledContentColor" to disabledContentColor.value.toArgb(),
-                        "backgroundColor" to backgroundColor.value.toArgb(),
-                        "genericTextColor" to genericTextColor.value.toArgb(),
-                        "navigationIconColor" to navigationIconColor.value.toArgb(),
-                        "buttonEnabledColor" to buttonEnabledColor.value.toArgb(),
-                        "buttonDisabledColor" to buttonDisabledColor.value.toArgb(),
-                        "buttonTextColor" to buttonTextColor.value.toArgb(),
-                        "resultSNColor" to resultSNColor.value.toArgb(),
-                        "resultASColor" to resultASColor.value.toArgb(),
-                        "resultPingColor" to resultPingColor.value.toArgb()
+        Box {
+            OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier.widthIn(max = 230.dp)
+            ) {
+                Text(text = selectedLabel, maxLines = 1)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                options.forEachIndexed { index, option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            onSelected(index)
+                            expanded = false
+                        }
                     )
-                    try {
-                        val gson = Gson()
-                        val jsonString = gson.toJson(savingSettingsMap)
-                        context.openFileOutput("settings.json", Context.MODE_PRIVATE)
-                            .use { outputStream ->
-                                outputStream.write(jsonString.toByteArray())
-                            }
-                    } catch (e: Exception) {
-                        Log.e("SettingSaveHandler", e.printStackTrace().toString())
-                    }
-                    Toast.makeText(context, "Change Saved!", Toast.LENGTH_LONG).show()
                 }
-
-            },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = buttonEnabledColor.value,
-                contentColor = buttonTextColor.value,
-                disabledContainerColor = buttonDisabledColor.value,
-                disabledContentColor = disabledContentColor.value
-            ),
-            shape = RoundedCornerShape(18.dp)
-
-        ) {
-            Text("Save")
+            }
         }
     }
-    Spacer(modifier = Modifier.height(8.dp))
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                //.border(1.dp, borderColor.value)
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("API Language   ", color = genericTextColor.value)
-            TextButton(
-                onClick = { languageExpanded.value = true },
-                border = BorderStroke(2.dp, genericTextColor.value),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = languageOptions[languageSelectedIndex.intValue],
-                    color = genericTextColor.value
-                )
-            }
-            DropdownMenu(
-                modifier = Modifier.background(backgroundColor.value),
-                expanded = languageExpanded.value,
-                onDismissRequest = { languageExpanded.value = false }
-            ) {
-                languageOptions.forEachIndexed { index, text ->
-                    DropdownMenuItem(onClick = {
-                        languageSelectedIndex.intValue = index
-                        languageExpanded.value = false
-                    }, text = { Text(text = text) })
-                }
-            }
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Enable TraceMap", color = genericTextColor.value)
-            Checkbox(
-                checked = enableTraceMapCheckedState.value,
-                onCheckedChange = { enableTraceMapCheckedState.value = it },
-                colors = CheckboxDefaults.colors(
-                    checkedColor = Color.Green,
-                    uncheckedColor = Color.Gray,
-                    checkmarkColor = Color.White
-                )
-            )
+}
 
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("TTL:", color = genericTextColor.value)
+@Composable
+private fun NumberSliderSetting(
+    title: String,
+    suffix: String = "",
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit
+) {
+    Column {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
             Text(
-                maxHopSliderValue.floatValue.toInt().toString(),
-                color = genericTextColor.value
+                text = value.roundToInt().toString() + suffix,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
             )
-            Slider(
-                value = maxHopSliderValue.floatValue,
-                onValueChange = { newValue: Float ->
-                    maxHopSliderValue.floatValue = newValue.roundToInt().toFloat()
-                },
-                valueRange = 1f..255f,
-                steps = 254
-            )
-
         }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Single Packet Timeout (Sec):", color = genericTextColor.value)
-            Text(
-                maxTimeoutSliderValue.floatValue.toInt().toString(),
-                color = genericTextColor.value
-            )
-            Slider(
-                value = maxTimeoutSliderValue.floatValue,
-                onValueChange = { newValue: Float ->
-                    maxTimeoutSliderValue.floatValue = newValue.roundToInt().toFloat()
-                },
-                valueRange = 1f..10f,
-                steps = 10
-            )
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange
+        )
+    }
+}
 
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Packet Count:", color = genericTextColor.value)
-            Text(
-                maxPacketCountSliderValue.floatValue.toInt().toString(),
-                color = genericTextColor.value
-            )
-            Slider(
-                value = maxPacketCountSliderValue.floatValue,
-                onValueChange = { newValue: Float ->
-                    maxPacketCountSliderValue.floatValue = newValue.roundToInt().toFloat()
-                },
-                valueRange = 1f..10f,
-                steps = 10
-            )
-
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                //.border(1.dp, genericTextColor.value)
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("DNS Mode   ", color = genericTextColor.value)
-            TextButton(
-                onClick = { dnsModeExpanded.value = true },
-                border = BorderStroke(2.dp, genericTextColor.value),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = dnsModeOptions[dnsModeSelectedIndex.intValue],
-                    color = genericTextColor.value
-                )
-            }
-            DropdownMenu(
-                modifier = Modifier.background(backgroundColor.value),
-                expanded = dnsModeExpanded.value,
-                onDismissRequest = { dnsModeExpanded.value = false }
-            ) {
-                dnsModeOptions.forEachIndexed { index, text ->
-                    DropdownMenuItem(onClick = {
-                        dnsModeSelectedIndex.intValue = index
-                        dnsModeExpanded.value = false
-                    }, text = { Text(text = text) })
-                }
-            }
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "UDP/TCP DNS Server:",
-                modifier = Modifier.weight(0.35f),
-                maxLines = 2,
-                color = genericTextColor.value
-            )
-            TextField(
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboardController?.hide()
-                    }
-                ),
-                singleLine = true,
-                value = dnsServerText.value,
-                onValueChange = {
-                    dnsServerText.value = it
-                    dnsServerText.value = dnsServerText.value.replace("\n", "").trim()
-                },
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = backgroundColor.value,
-                    focusedContainerColor = backgroundColor.value,
-                    focusedTextColor = genericTextColor.value,
-                    unfocusedTextColor = genericTextColor.value
-                ),
-                placeholder = {
-                    Text("Insert IPv4 or IPv6", color = genericTextColor.value)
-                },
-                modifier = Modifier
-                    .weight(0.65f)
-                    .heightIn(min = 56.dp)
-            )
-
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                //.border(1.dp, genericTextColor.value)
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Doh Server   ", color = genericTextColor.value)
-            TextButton(
-                onClick = { dohServersExpanded.value = true },
-                border = BorderStroke(2.dp, genericTextColor.value),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = dohServersOptions[dohServersSelectedIndex.intValue],
-                    color = genericTextColor.value
-                )
-            }
-            DropdownMenu(
-                modifier = Modifier.background(backgroundColor.value),
-                expanded = dohServersExpanded.value,
-                onDismissRequest = { dohServersExpanded.value = false }
-            ) {
-                dohServersOptions.forEachIndexed { index, text ->
-                    DropdownMenuItem(onClick = {
-                        dohServersSelectedIndex.intValue = index
-                        dohServersExpanded.value = false
-                    }, text = { Text(text = text) })
-                }
-            }
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "POW HostName:",
-                modifier = Modifier.weight(0.35f),
-                maxLines = 2,
-                color = genericTextColor.value
-            )
-            TextField(
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboardController?.hide()
-                    }
-                ),
-                singleLine = true,
-                value = powHostNameText.value,
-                onValueChange = {
-                    powHostNameText.value = it
-                    powHostNameText.value = powHostNameText.value.replace("\n", "").trim()
-                },
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = backgroundColor.value,
-                    focusedContainerColor = backgroundColor.value,
-                    focusedTextColor = genericTextColor.value,
-                    unfocusedTextColor = genericTextColor.value
-                ),
-                placeholder = {
-                    Text("Insert Hostname", color = genericTextColor.value)
-                },
-                modifier = Modifier
-                    .weight(0.65f)
-                    .heightIn(min = 56.dp)
-            )
-
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "POW DNSName:",
-                modifier = Modifier.weight(0.35f),
-                maxLines = 2,
-                color = genericTextColor.value
-            )
-            TextField(
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboardController?.hide()
-                    }
-                ),
-                singleLine = true,
-                value = powDNSNameText.value,
-                onValueChange = {
-                    powDNSNameText.value = it
-                    powDNSNameText.value = powDNSNameText.value.replace("\n", "").trim()
-                },
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = backgroundColor.value,
-                    focusedContainerColor = backgroundColor.value,
-                    focusedTextColor = genericTextColor.value,
-                    unfocusedTextColor = genericTextColor.value
-                ),
-                placeholder = {
-                    Text("Insert Hostname, IPv4 or IPv6", color = genericTextColor.value)
-                },
-                modifier = Modifier
-                    .weight(0.65f)
-                    .heightIn(min = 56.dp)
-            )
-
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "API HostName:",
-                modifier = Modifier.weight(0.35f),
-                maxLines = 2,
-                color = genericTextColor.value
-            )
-            TextField(
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboardController?.hide()
-                    }
-                ),
-                singleLine = true,
-                value = apiHostNameText.value,
-                onValueChange = {
-                    apiHostNameText.value = it
-                    apiHostNameText.value = apiHostNameText.value.replace("\n", "").trim()
-                },
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = backgroundColor.value,
-                    focusedContainerColor = backgroundColor.value,
-                    focusedTextColor = genericTextColor.value,
-                    unfocusedTextColor = genericTextColor.value
-                ),
-                placeholder = {
-                    Text("Insert Hostname", color = genericTextColor.value)
-                },
-                modifier = Modifier
-                    .weight(0.65f)
-                    .heightIn(min = 56.dp)
-            )
-
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "API DNSName:",
-                modifier = Modifier.weight(0.35f),
-                maxLines = 2,
-                color = genericTextColor.value
-            )
-            TextField(
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboardController?.hide()
-                    }
-                ),
-                singleLine = true,
-                value = apiDNSNameText.value,
-                onValueChange = {
-                    apiDNSNameText.value = it
-                    apiDNSNameText.value = apiDNSNameText.value.replace("\n", "").trim()
-                },
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = backgroundColor.value,
-                    focusedContainerColor = backgroundColor.value,
-                    focusedTextColor = genericTextColor.value,
-                    unfocusedTextColor = genericTextColor.value
-                ),
-                placeholder = {
-                    Text("Insert Hostname, IPv4 or IPv6", color = genericTextColor.value)
-                },
-                modifier = Modifier
-                    .weight(0.65f)
-                    .heightIn(min = 56.dp)
-            )
-
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Select Color    ", color = genericTextColor.value)
-            TextButton(
-                onClick = { colorListExpanded.value = true },
-                border = BorderStroke(2.dp, genericTextColor.value),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = colorLabels[colorPickerCurrentName.value].toString(),
-                    color = genericTextColor.value
-                )
-            }
-            DropdownMenu(
-                modifier = Modifier.background(backgroundColor.value),
-                expanded = colorListExpanded.value,
-                onDismissRequest = { colorListExpanded.value = false }
-            ) {
-                colorLabels.keys.forEach { text ->
-                    DropdownMenuItem(onClick = {
-                        colorPickerCurrentName.value = text
-                        colorListExpanded.value = false
-                    }, text = { Text(text = colorLabels[text].toString()) })
-                }
-            }
-            when (colorPickerCurrentName.value) {
-                "borderColorValue" -> {
-                    currentButtonColor.value = borderColorValue.value
-                }
-
-                "disabledContentColorValue" -> {
-                    currentButtonColor.value = disabledContentColorValue.value
-                }
-
-                "backgroundColorValue" -> {
-                    currentButtonColor.value = backgroundColorValue.value
-                }
-
-                "genericTextColorValue" -> {
-                    currentButtonColor.value = genericTextColorValue.value
-                }
-
-                "navigationIconColorValue" -> {
-                    currentButtonColor.value = navigationIconColorValue.value
-                }
-
-                "buttonEnabledColorValue" -> {
-                    currentButtonColor.value = buttonEnabledColorValue.value
-                }
-
-                "buttonDisabledColorValue" -> {
-                    currentButtonColor.value = buttonDisabledColorValue.value
-                }
-
-                "buttonTextColorValue" -> {
-                    currentButtonColor.value = buttonTextColorValue.value
-                }
-
-                "resultSNColorValue" -> {
-                    currentButtonColor.value = resultSNColorValue.value
-                }
-
-                "resultASColorValue" -> {
-                    currentButtonColor.value = resultASColorValue.value
-                }
-
-                "resultPingColorValue" -> {
-                    currentButtonColor.value = resultPingColorValue.value
-                }
-
-                else -> {
-                    currentButtonColor.value = borderColorValue.value
-                }
-            }
-            Button(
-                modifier = Modifier.alignByBaseline(),
-                onClick = {
-                    colorPickerExpanded.value = true
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = currentButtonColor.value,
-                    contentColor = currentButtonColor.value,
-                    disabledContainerColor = currentButtonColor.value,
-                    disabledContentColor = currentButtonColor.value
-                )
-            ) {
-                Text("")
-            }
-
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 1.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Color Presets    ", color = genericTextColor.value)
-            Button(
-                onClick = {
-                    borderColorValue.value = Color.DarkGray
-                    disabledContentColorValue.value = Color.DarkGray
-                    backgroundColorValue.value = Color.Black
-                    genericTextColorValue.value = Color.White
-                    navigationIconColorValue.value = Color.White
-                    buttonEnabledColorValue.value = Color(0xFF00F6FF)
-                    buttonDisabledColorValue.value = Color.Gray
-                    buttonTextColorValue.value = Color.Black
-                    resultSNColorValue.value = Color.Yellow
-                    resultASColorValue.value = Color.Green
-                    resultPingColorValue.value = Color(0xFF00FFFF)
-
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = buttonEnabledColor.value,
-                    contentColor = buttonTextColor.value,
-                    disabledContainerColor = buttonDisabledColor.value,
-                    disabledContentColor = disabledContentColor.value
-                )
-            ) {
-                Text("Dark Preset")
-            }
-            Button(
-                onClick = {
-                    borderColorValue.value = Color(0xFF334F77)
-                    disabledContentColorValue.value = Color(0x61FFFFFF)
-                    backgroundColorValue.value = Color(0xFF012456)
-                    genericTextColorValue.value = Color.White
-                    navigationIconColorValue.value = Color.White
-                    buttonEnabledColorValue.value = Color(0xFFFF9900)
-                    buttonDisabledColorValue.value = Color(0x1EFF9900)
-                    buttonTextColorValue.value = Color.White
-                    resultSNColorValue.value = Color.Yellow
-                    resultASColorValue.value = Color.Green
-                    resultPingColorValue.value = Color(0xFF00FFFF)
-
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = buttonEnabledColor.value,
-                    contentColor = buttonTextColor.value,
-                    disabledContainerColor = buttonDisabledColor.value,
-                    disabledContentColor = disabledContentColor.value
-                )
-            ) {
-                Text("Light Preset")
-            }
-
-        }
-        HorizontalDivider(color = borderColor.value, thickness = 1.dp)
-
-
+@Composable
+private fun SettingsTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    onDone: () -> Unit
+) {
+    Column {
+        Text(
+            text = label,
+            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onDone() })
+        )
     }
 }

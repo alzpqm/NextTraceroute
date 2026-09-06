@@ -45,8 +45,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "com.surfaceocean.nexttraceroute"
         minSdk = 26
         targetSdk = 37
-        versionCode = 19
-        versionName = "0.2.1"
+        versionCode = 20
+        versionName = "0.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -97,7 +97,6 @@ extensions.configure<ApplicationExtension> {
 }
 
 dependencies {
-    implementation(libs.compose.color.picker.android)
     implementation(libs.dnsjava)
     implementation(libs.ipaddress)
     implementation(libs.okhttp)

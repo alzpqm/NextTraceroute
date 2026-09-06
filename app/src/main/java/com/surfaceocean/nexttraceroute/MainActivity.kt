@@ -150,21 +150,21 @@ class MainActivity : ComponentActivity() {
         setContent {
             NextTracerouteTheme {
                 val materialColors = MaterialTheme.colorScheme
-                val borderColor = remember {
+                val borderColor = remember(materialColors) {
                     mutableStateOf(materialColors.outlineVariant)
                 }
-                val disabledContentColor = remember {
+                val disabledContentColor = remember(materialColors) {
                     mutableStateOf(materialColors.onSurface.copy(alpha = 0.38f))
                 }
-                val backgroundColor = remember { mutableStateOf(materialColors.background) }
-                val genericTextColor = remember { mutableStateOf(materialColors.onBackground) }
-                val navigationIconColor = remember { mutableStateOf(materialColors.onSurface) }
-                val buttonEnabledColor = remember { mutableStateOf(materialColors.primary) }
-                val buttonDisabledColor = remember { mutableStateOf(materialColors.surfaceVariant) }
-                val buttonTextColor = remember { mutableStateOf(materialColors.onPrimary) }
-                val resultSNColor = remember { mutableStateOf(materialColors.primary) }
-                val resultASColor = remember { mutableStateOf(materialColors.tertiary) }
-                val resultPingColor = remember { mutableStateOf(materialColors.secondary) }
+                val backgroundColor = remember(materialColors) { mutableStateOf(materialColors.background) }
+                val genericTextColor = remember(materialColors) { mutableStateOf(materialColors.onBackground) }
+                val navigationIconColor = remember(materialColors) { mutableStateOf(materialColors.onSurface) }
+                val buttonEnabledColor = remember(materialColors) { mutableStateOf(materialColors.primary) }
+                val buttonDisabledColor = remember(materialColors) { mutableStateOf(materialColors.surfaceVariant) }
+                val buttonTextColor = remember(materialColors) { mutableStateOf(materialColors.onPrimary) }
+                val resultSNColor = remember(materialColors) { mutableStateOf(materialColors.primary) }
+                val resultASColor = remember(materialColors) { mutableStateOf(materialColors.tertiary) }
+                val resultPingColor = remember(materialColors) { mutableStateOf(materialColors.secondary) }
                 Surface(
                     modifier = Modifier
                         .fillMaxSize(),
@@ -253,22 +253,6 @@ class MainActivity : ComponentActivity() {
                                     (settingsMap["apiDNSName"] as? String)?.let {
                                         apiDNSName.value = it
                                     }
-                                    fun restoreColor(key: String, target: MutableState<Color>) {
-                                        (settingsMap[key] as? Number)?.toInt()?.let {
-                                            target.value = Color(it)
-                                        }
-                                    }
-                                    restoreColor("borderColor", borderColor)
-                                    restoreColor("disabledContentColor", disabledContentColor)
-                                    restoreColor("backgroundColor", backgroundColor)
-                                    restoreColor("genericTextColor", genericTextColor)
-                                    restoreColor("navigationIconColor", navigationIconColor)
-                                    restoreColor("buttonEnabledColor", buttonEnabledColor)
-                                    restoreColor("buttonDisabledColor", buttonDisabledColor)
-                                    restoreColor("buttonTextColor", buttonTextColor)
-                                    restoreColor("resultSNColor", resultSNColor)
-                                    restoreColor("resultASColor", resultASColor)
-                                    restoreColor("resultPingColor", resultPingColor)
                                 }
 
                             }
@@ -321,18 +305,7 @@ class MainActivity : ComponentActivity() {
                                     apiHostName = apiHostName,
                                     apiDNSName = apiDNSName,
                                     currentDOHServer = currentDOHServer,
-                                    currentDNSMode = currentDNSMode,
-                                    borderColor = borderColor,
-                                    disabledContentColor = disabledContentColor,
-                                    backgroundColor = backgroundColor,
-                                    genericTextColor = genericTextColor,
-                                    navigationIconColor = navigationIconColor,
-                                    buttonEnabledColor = buttonEnabledColor,
-                                    buttonDisabledColor = buttonDisabledColor,
-                                    buttonTextColor = buttonTextColor,
-                                    resultSNColor = resultSNColor,
-                                    resultASColor = resultASColor,
-                                    resultPingColor = resultPingColor
+                                    currentDNSMode = currentDNSMode
                                 )
                             }
 
@@ -1166,6 +1139,7 @@ fun MainColumn(
         //Select a ip and change
 
         if (multipleIps.isNotEmpty() && tracerouteThreadsIntList.none { it != 0 }) {
+            val uniqueIps = multipleIps.distinctBy { it.value.trim() }
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1189,8 +1163,8 @@ fun MainColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         itemsIndexed(
-                            items = multipleIps,
-                            key = { _, item -> item.value }) { _, multipleIPItem ->
+                            items = uniqueIps,
+                            key = { _, item -> item.value.trim() }) { _, multipleIPItem ->
                             Button(
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {

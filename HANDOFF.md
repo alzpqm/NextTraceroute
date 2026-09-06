@@ -25,7 +25,7 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行應用版本：`versionName = 0.2.1`、`versionCode = 19`
+- 現行應用版本：`versionName = 0.2.2`、`versionCode = 20`
 - 後續公開版本必須高於 0.2.1，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
@@ -46,7 +46,7 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-09-02）
+## 目前工作（2026-09-06）
 
 - 首頁輸入框跳動已修正：移除浮動 label、固定 64 dp 高度、永久保留清除鍵槽位、單次更新輸入狀態、避免每次按鍵 `trim()`，並固定 Run 按鈕高度。
 - API 37 UI hierarchy 已確認空白聚焦、第一字、完整文字與清空後，輸入框皆為 `[68,358][768,526]`，Run 文字皆為 `[905,416][970,469]`；第一字出現時版面 bounds 不變。
@@ -56,6 +56,10 @@
 - 原始碼與 LICENSE 保留 `surfaceocean` 著作權署名，但已移除 email；目前維護入口指向 `alzpqm/NextTraceroute`，並保留上游連結。
 - 已加入 `scripts/privacy-scan.sh`；發佈來源前執行無參數模式，建置正式 APK/AAB 後執行 `--artifacts`。
 - 0.2.1 正式版已完成建置、發佈與遠端核實；後續繼續研究 UI、設定頁面與未解 bugs，下一個公開版本必須高於 0.2.1。
+- 0.2.2 已修正日／夜模式狀態錯誤：應用程式顏色固定來自當前 Material 3 `colorScheme`，舊版 `settings.json` 的 11 個顏色欄位會被忽略，重新儲存時也會自動移除；系統主題切換後不再被舊設定覆蓋。
+- 設定頁已重構為 Material 3 區塊式版面，改用適當的 surface／on-surface 色階、垂直配置 Slider、外置輸入欄標籤與較低對比分隔線；已移除選色器、Dark／Light Preset 與 `compose-color-picker` 依賴。
+- 已移植上游 0.1.7 的重複 IP 防崩潰修正，位址選擇清單改以去重後資料與穩定 key 顯示，不回退本分支較新的依賴、API 37 或版本基線。
+- `.github/workflows/build.yml` 已改為僅能手動啟動的簽署建置，不再由 Release 事件觸發或覆蓋正式資產；工作流程只產生保留一天的暫存 artifact，正式發佈前仍須下載至本機重新核對。
 
 ## 驗證紀錄
 
@@ -70,3 +74,7 @@
 - 2026-09-02：0.2.1 產物隱私掃描通過，APK 簽章 Subject 為 `CN=alzpqm, O=alzpqm`。APK SHA-256：`e28a50ce66c56a45edc609fe4ffac556103ec6baecd169907e977f6ceb2a2164`；AAB SHA-256：`c3385873340f025629a81ba7dbfbdd94b8cfebb5f218374646a95b7bbb1693f0`。
 - 2026-09-02：遠端 v0.2.1 為正式版與 latest，作者為 `alzpqm`，tag 解析至 `750a517`，兩個 Release assets 的遠端 digest 與上述雜湊一致，GitHub Secret Scanning 為 0 alerts。
 - 2026-09-02：`.github/workflows/build.yml` 會在 Release 發佈後重複建置並以 `overwrite: true` 覆蓋已驗證資產。本次重複 run 已取消，遠端資產未被改動；下次發佈前必須修正或移除此流程。
+- 2026-09-06：API 37 模擬器完成日／夜模式對照。全新設定下冷啟動可跟隨系統；在深色模式進入設定並按 Save，再切回日間模式及冷啟動，可穩定重現 App 背景仍為黑色、狀態列黑色圖示不可讀。根因位於 `MainActivity` 還原 11 組固定色與 `Settings` 無條件保存這些顏色；本輪僅診斷與記錄，未修改 UI 程式。
+- 2026-09-06：0.2.2 修正後完成乾淨 `clean testDebugUnitTest lintDebug assembleDebug`，56 個 tasks 全部成功；lint 為 0 errors、5 個非阻擋更新／目錄整理警告。
+- 2026-09-06：API 37 模擬器確認深色模式儲存設定後切回日間模式，首頁、狀態列與導覽列皆正確恢復淺色；重新產生的 `settings.json` 不含任何顏色欄位。
+- 2026-09-06：API 37 模擬器完成設定頁頂部、DNS 與進階服務端的深色畫面檢查；大字級下輸入內容不再與標籤重疊，連續 Slider 不再顯示過密刻度。網域解析、IPv4／IPv6 位址選擇、開始追蹤及橫向旋轉皆未出現崩潰或 ANR。
