@@ -23,7 +23,7 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: 安裝 Android 37 平台
-        run: sdkmanager "platforms;android-37"
+        run: sdkmanager --channel=3 "platforms;android-37"
 
       - name: 準備簽署金鑰
         env:
