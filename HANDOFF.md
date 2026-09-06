@@ -9,7 +9,7 @@
 - 上游：`origin` → `https://github.com/nxtrace/NextTraceroute.git`
 - 維護 Fork：`fork` → `https://github.com/alzpqm/NextTraceroute.git`
 - 目前開發分支：`codex/nexttrace-1.7.2-ui`
-- 目前穩定版：`v0.2.1`，release commit `750a517`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.1`。
+- 目前穩定版：`v0.2.2`，release commit `92eaca2`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.2`。
 - 發佈與提交只能使用 GitHub 帳號名稱，以及 GitHub 提供的 noreply email；不可出現真名或真實 email。
 - 每次 push、tag 或 GitHub Release 前都必須完成隱私掃描。發現本機使用者名稱、絕對路徑、裝置序號、PIN、Token、密碼、私鑰、keystore、真實姓名或真實 email 時禁止發佈。
 - 隱私掃描必須涵蓋工作樹、待推送 commits、tag/commit 作者資料、APK/AAB 簽章憑證與 Release 中繼資料；掃描結果須更新在本檔。
@@ -41,6 +41,8 @@
 - Android 14 實機可透過 `adb devices` 在本機辨識；裝置序號與解鎖資訊是敏感資料，不得記錄在此檔或任何提交中。
 - Debug application ID：`com.surfaceocean.nexttraceroute.debug`，可與正式版並存。
 - macOS 命令列可能預設到 Java 8；建置時必須使用 Android Studio 內建 JBR 21，並設定 `ANDROID_HOME` 或 `ANDROID_SDK_ROOT`。不可把實際本機路徑寫進 repository。
+- 本機正式簽署金鑰的位置索引與鑰匙圈服務名稱已記錄在 `.git/info/nexttraceroute-private-handoff.md`；該檔僅存在本機且不會被提交。後續簽署前先讀該檔，不可重新搜尋或輸出金鑰位置與密碼。
+- Fork 已設定正式簽署所需的四個加密 Actions Secrets；`.github/workflows/build.yml` 的「手動簽署建置」可直接產生與 0.2.1 相同憑證的 APK／AAB。API 37 平台的正確 SDK 套件 ID 是 `platforms;android-37.0`。
 - 常用驗證：
   - `./gradlew testDebugUnitTest lintDebug assembleDebug`
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
@@ -60,6 +62,7 @@
 - 設定頁已重構為 Material 3 區塊式版面，改用適當的 surface／on-surface 色階、垂直配置 Slider、外置輸入欄標籤與較低對比分隔線；已移除選色器、Dark／Light Preset 與 `compose-color-picker` 依賴。
 - 已移植上游 0.1.7 的重複 IP 防崩潰修正，位址選擇清單改以去重後資料與穩定 key 顯示，不回退本分支較新的依賴、API 37 或版本基線。
 - `.github/workflows/build.yml` 已改為僅能手動啟動的簽署建置，不再由 Release 事件觸發或覆蓋正式資產；工作流程只產生保留一天的暫存 artifact，正式發佈前仍須下載至本機重新核對。
+- 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
 
@@ -78,3 +81,7 @@
 - 2026-09-06：0.2.2 修正後完成乾淨 `clean testDebugUnitTest lintDebug assembleDebug`，56 個 tasks 全部成功；lint 為 0 errors、5 個非阻擋更新／目錄整理警告。
 - 2026-09-06：API 37 模擬器確認深色模式儲存設定後切回日間模式，首頁、狀態列與導覽列皆正確恢復淺色；重新產生的 `settings.json` 不含任何顏色欄位。
 - 2026-09-06：API 37 模擬器完成設定頁頂部、DNS 與進階服務端的深色畫面檢查；大字級下輸入內容不再與標籤重疊，連續 Slider 不再顯示過密刻度。網域解析、IPv4／IPv6 位址選擇、開始追蹤及橫向旋轉皆未出現崩潰或 ANR。
+- 2026-09-06：正式簽署工作流程 run `34016502792` 在提交 `92eaca2` 上成功完成 Android 37 安裝、單元測試、lint、APK／AAB 建置、產物隱私掃描與暫存上傳。
+- 2026-09-06：0.2.2 正式 APK 可直接以 `adb install -r` 覆蓋 0.2.1；升級後為 versionCode 20、versionName 0.2.2、minSdk 26、targetSdk 37，Activity 冷啟動成功。0.2.1 與 0.2.2 憑證 SHA-256 完全相同，Subject 為 `CN=alzpqm, O=alzpqm`。
+- 2026-09-06：0.2.2 發佈產物再次通過本機隱私掃描。APK SHA-256：`8dd786d5adbe407b26af16c6a9bd145cb266293b3d7ad69f1f13405b07d1e054`；AAB SHA-256：`ccb90862f679d2bacc38be0c7b438453058d3175c165b9bf139ee53f0ae58f9e`。
+- 2026-09-06：遠端 v0.2.2 為正式版與 latest，作者為 `alzpqm`，tag 解析至 `92eaca2`；APK、AAB 與 SHA256SUMS 三個 Release assets 的遠端 digest 均與本機檔案一致，GitHub Secret Scanning 為 0 alerts。Release 發佈後沒有自動覆蓋資產的工作流程。
