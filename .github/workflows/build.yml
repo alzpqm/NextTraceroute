@@ -46,15 +46,15 @@ jobs:
       - name: 整理建置產物
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/release/app-release.apk dist/NextTraceroute-v0.2.2.apk
-          cp app/build/outputs/bundle/release/app-release.aab dist/NextTraceroute-v0.2.2.aab
+          cp app/build/outputs/apk/release/app-release.apk dist/NextTraceroute-v0.2.3.apk
+          cp app/build/outputs/bundle/release/app-release.aab dist/NextTraceroute-v0.2.3.aab
           cd dist
-          sha256sum NextTraceroute-v0.2.2.apk NextTraceroute-v0.2.2.aab > SHA256SUMS.txt
+          sha256sum NextTraceroute-v0.2.3.apk NextTraceroute-v0.2.3.aab > SHA256SUMS.txt
 
       - name: 上傳暫存產物
         uses: actions/upload-artifact@v7
         with:
-          name: NextTraceroute-v0.2.2-signed
+          name: NextTraceroute-v0.2.3-signed
           path: dist/
           retention-days: 1
           compression-level: 0

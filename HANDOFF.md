@@ -48,7 +48,14 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-09-06）
+## 目前工作（2026-09-20）
+
+- 本輪已接手長網址解析與頁面崩潰問題，準備 0.2.3／versionCode 21；尚未正式發佈，最後穩定版仍是 0.2.2。
+- 輸入改為先擷取 authority，再以有長度上限的方式驗證；貼上 URL 立即轉為主機名稱，移除可觸發 StackOverflowError 的遞迴網域 regex。
+- DNS A／AAAA 集中合併去重，支援 CNAME-only 回覆及循環防護；WebSocket 回覆先檢查 IP、型別與空值，再由主執行緒更新畫面。
+- 追蹤停止／重跑改為取消並等待前一輪工作；ping 可中斷、WebSocket 關閉、每跳查詢限制同時執行數量。歷史紀錄讀寫及外部 Intent 加入錯誤處理。
+- 本輪使用 Windows JDK 21 與 Android 37 x86_64／16 KB 模擬器；正式簽署沿用 GitHub Actions Secrets，不建立新金鑰。
+- 使用者已明確要求正式發佈並完成 GitHub CLI 授權；仍須完成最終回歸、正式產物簽章／隱私核對才可建立 Release。
 
 - 首頁輸入框跳動已修正：移除浮動 label、固定 64 dp 高度、永久保留清除鍵槽位、單次更新輸入狀態、避免每次按鍵 `trim()`，並固定 Run 按鈕高度。
 - API 37 UI hierarchy 已確認空白聚焦、第一字、完整文字與清空後，輸入框皆為 `[68,358][768,526]`，Run 文字皆為 `[905,416][970,469]`；第一字出現時版面 bounds 不變。
@@ -65,6 +72,10 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-09-20：確認使用者提供的 CDN 主機可正常擷取及解析，未將其臨時 URL 參數寫入測試或文件；另以長網域穩定重現舊 regex 的 StackOverflowError。
+- 2026-09-20：17 個 JVM 單元測試通過，涵蓋十萬字元 URL、過長網域、無效 IPv6、CNAME 循環與去重、異常 API JSON。第二輪 testDebugUnitTest／lintDebug／assembleDebug／assembleDebugAndroidTest 成功；API 37 操作回歸正在執行，最終版仍須重跑。
+- 2026-09-20：Windows 來源隱私等效檢查通過：可發布檔案無本機路徑、私鑰、額外憑證檔、同步副本或非 noreply email；既有待推送提交作者符合匿名身分。正式產物尚待 Actions 原有 Bash 掃描與本機核對。
 
 - `v0.2.0` 發佈前曾完成建置與 API 37 模擬器、Android 14 實機檢查；本輪 UI 修改後仍須重新驗證，不能沿用舊結果。
 - 2026-09-02：最後文件與署名更新後，乾淨執行 `clean testDebugUnitTest lintDebug assembleDebug` 成功，56 個 tasks 全部完成。

@@ -98,6 +98,8 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -193,62 +195,58 @@ fun HistoryPage(
     }
 
     LaunchedEffect(isDeleteAllTriggered.value) {
-        scope.launch(Dispatchers.IO) {
-            if (isDeleteAllTriggered.value) {
-                isDatabaseLoadFinished.value = false
-                try {
-                    db.withTransaction {
-                        historyDao.deleteAll()
-                    }
-                } catch (e: Exception) {
-                    Log.e("databaseHandler", e.printStackTrace().toString())
-                }
+        if (isDeleteAllTriggered.value) {
+            try {
+                withContext(Dispatchers.IO) { db.withTransaction { historyDao.deleteAll() } }
                 clearDBToastInfo.value = "Database Cleared!"
                 isDatabaseUpdateTriggered.value = true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Log.e("databaseHandler", "Unable to clear history", error)
+                clearDBToastInfo.value = "Unable to clear history."
+            } finally {
                 isDeleteAllTriggered.value = false
-
             }
         }
     }
 
     LaunchedEffect(isDatabaseUpdateTriggered.value) {
-        scope.launch(Dispatchers.IO) {
-            if (isDatabaseUpdateTriggered.value) {
-                db.withTransaction {
-                    isDatabaseLoadFinished.value = false
-                    val list = historyDao.getAll()
-                    allData.clear()
-                    allData.addAll(list)
-//                    clearDBToastInfo.value=allData.size.toString()
-                    isDatabaseUpdateTriggered.value = false
-                    isDatabaseLoadFinished.value = true
-                }
+        if (isDatabaseUpdateTriggered.value) {
+            isDatabaseLoadFinished.value = false
+            try {
+                val records = withContext(Dispatchers.IO) { db.withTransaction { historyDao.getAll() } }
+                allData.clear()
+                allData.addAll(records)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Log.e("databaseHandler", "Unable to load history", error)
+                clearDBToastInfo.value = "Unable to load history."
+            } finally {
+                isDatabaseLoadFinished.value = true
+                isDatabaseUpdateTriggered.value = false
             }
         }
     }
 
-
-    //Item deletion only triggers when currentDeletionUUID is changed
     LaunchedEffect(currentDeletionUUID.value) {
-        scope.launch(Dispatchers.IO) {
-            if (currentDeletionUUID.value != MAGIC_UUID) {
-                isDatabaseLoadFinished.value = false
-                try {
-                    db.withTransaction {
-                        historyDao.deleteByUuid(uuid = currentDeletionUUID.value)
-                    }
-                } catch (e: Exception) {
-                    Log.e("databaseHandler", e.printStackTrace().toString())
-                }
+        val uuid = currentDeletionUUID.value
+        if (uuid != MAGIC_UUID) {
+            try {
+                withContext(Dispatchers.IO) { db.withTransaction { historyDao.deleteByUuid(uuid) } }
                 clearDBToastInfo.value = "Item Deleted!"
-                currentDeletionUUID.value = MAGIC_UUID
                 isDatabaseUpdateTriggered.value = true
-
-
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Log.e("databaseHandler", "Unable to delete history", error)
+                clearDBToastInfo.value = "Unable to delete history."
+            } finally {
+                currentDeletionUUID.value = MAGIC_UUID
             }
         }
     }
-
 
     Row(
         modifier = Modifier
@@ -414,7 +412,7 @@ fun HistoryPage(
                                             },
                                             onTap = {
                                                 val tapURL = "https://bgp.tools/search?q=${item.ip}"
-                                                context.startActivity(
+                                                context.tryStartActivity(
                                                     Intent(
                                                         Intent.ACTION_VIEW,
                                                         tapURL.toUri()
@@ -457,7 +455,7 @@ fun HistoryPage(
                                             onTap = {
                                                 val tapURL =
                                                     "https://bgp.tools/search?q=${item.domain}"
-                                                context.startActivity(
+                                                context.tryStartActivity(
                                                     Intent(
                                                         Intent.ACTION_VIEW,
                                                         tapURL.toUri()
@@ -558,7 +556,7 @@ fun HistoryPage(
                             type = "text/plain"
                         }
                         val chooser = Intent.createChooser(shareIntent, "Share to")
-                        context.startActivity(chooser)
+                        context.tryStartActivity(chooser)
                     }) {
                         Icon(
                             Icons.Filled.Share,

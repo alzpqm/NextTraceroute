@@ -133,6 +133,10 @@ import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.surfaceocean.nexttraceroute.ui.theme.NextTracerouteTheme
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -557,7 +561,7 @@ fun MyTopAppBar(
                     onClick = {
                         val privacyURL =
                             "https://github.com/nxtrace/NextTraceroute/blob/master/PrivacyPolicy.md"
-                        context.startActivity(
+                        context.tryStartActivity(
                             Intent(
                                 Intent.ACTION_VIEW,
                                 privacyURL.toUri()
@@ -589,36 +593,29 @@ fun CheckThreadsStatus(
     db: AppDatabase
 ) {
     LaunchedEffect(Unit) {
-        scope.launch(Dispatchers.IO) {
-            // Give the worker effects time to register their jobs, then finish as
-            // soon as the run is actually idle. The old implementation always
-            // waited ten seconds and could also finish an empty/failed run.
-            delay(timeMillis = 500)
-            while (isDNSInProgress.value || tracerouteThreadsIntList.any { it != 0 }) {
-                delay(timeMillis = 250)
-            }
-            mutex.withLock {
-                tracerouteThreadsIntList.removeAll { it == 0 }
-            }
+        scope.launch(Dispatchers.Main.immediate) {
+            delay(500)
+            while (isDNSInProgress.value || tracerouteThreadsIntList.any { it != 0 } ||
+                gridDataList.any { row ->
+                    identifyTraceTarget(row[0][1].value) in listOf(IPV4_IDENTIFIER, IPV6_IDENTIFIER) &&
+                        (row[2][0].value.isEmpty() || row[2][1].value.isEmpty())
+                }) delay(250)
+            mutex.withLock { tracerouteThreadsIntList.removeAll { it == 0 } }
             if (multipleIps.isEmpty()) {
-                isSearchBarEnabled.value = true
-                val historyText = buildTraceHistory(
-                    searchText = searchText.value,
-                    currentDomain = currentDomain.value,
-                    gridDataList = gridDataList
-                )
+                val historyText = buildTraceHistory(searchText.value, currentDomain.value, gridDataList)
                 copyHistory.value = historyText
-                if (historyText.isNotBlank()) {
-                    val historyData = HistoryData(
-                        ip = searchText.value,
-                        domain = currentDomain.value,
-                        history = historyText
-                    )
-                    db.withTransaction {
-                        historyDao.insertHistory(historyData)
+                val historyData = HistoryData(ip = searchText.value, domain = currentDomain.value, history = historyText)
+                try {
+                    if (historyText.isNotBlank()) withContext(Dispatchers.IO) {
+                        db.withTransaction { historyDao.insertHistory(historyData) }
                     }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    Log.e("databaseHandler", "Unable to save trace history", error)
                 }
                 currentDomain.value = ""
+                isSearchBarEnabled.value = true
             }
         }
     }
@@ -775,15 +772,23 @@ fun MainColumn(
     }
     val testText = remember { mutableStateOf("") }
     val copyHistory = remember { mutableStateOf("") }
-    val cancelTrace = {
-        activeRunScope.value?.cancel()
-        activeRunScope.value = null
-        tracerouteThreadsIntList.clear()
-        multipleIps.clear()
-        isDNSInProgress.value = false
-        isAPIFinished.value = true
-        isSearchBarEnabled.value = true
-        testText.value = "Trace stopped."
+    var stopping by remember { mutableStateOf(false) }
+    val cancelTrace: () -> Unit = {
+        if (!stopping) {
+            stopping = true
+            testText.value = "Stopping trace…"
+            coroutineScope.launch {
+                activeRunScope.value?.coroutineContext?.get(Job)?.cancelAndJoin()
+                activeRunScope.value = null
+                tracerouteThreadsIntList.clear()
+                multipleIps.clear()
+                isDNSInProgress.value = false
+                isAPIFinished.value = true
+                isSearchBarEnabled.value = true
+                testText.value = "Trace stopped."
+                stopping = false
+            }
+        }
     }
 
     LaunchedEffect(isButtonClicked.value) {
@@ -797,8 +802,11 @@ fun MainColumn(
         }
 
         searchText.value = normalizedTarget
-        isButtonClicked.value = false
         isSearchBarEnabled.value = false
+        // Drain the previous run before reusing any of its state.
+        activeRunScope.value?.coroutineContext?.get(Job)?.cancelAndJoin()
+        activeRunScope.value = null
+        isButtonClicked.value = false
         traceRunId.intValue += 1
         keyboardController?.hide()
         if (activeRunScope.value == null) {
@@ -806,7 +814,7 @@ fun MainColumn(
                 SupervisorJob() + Dispatchers.Main.immediate
             )
         }
-        tracerouteThreadsIntList.removeAll { it == 0 }
+        tracerouteThreadsIntList.clear()
         clearData(
             multipleIps = multipleIps,
             nativePingCheckErrorText = nativePingCheckErrorText,
@@ -841,7 +849,7 @@ fun MainColumn(
         Spacer(modifier = Modifier.height(12.dp))
         LaunchedEffect(traceRunId.intValue) {
             if (traceRunId.intValue > 0) {
-                activeRunScope.value?.launch(Dispatchers.IO) {
+                activeRunScope.value?.launch(Dispatchers.Main.immediate) {
                     trHandler.testNativePing(
                         v4Status = isNativePing4Available,
                         v6Status = isNativePing6Available,
@@ -908,20 +916,22 @@ fun MainColumn(
         }
         //Compare singleHopCursor with current value
 
-        trHandler.EachHopHandler(
-            threadMutex = threadMutex,
-            tracerouteThreadsIntList = tracerouteThreadsIntList,
-            singleHopCursor = singleHopCursor,
-            gridDataList = gridDataList,
-            scope = activeRunScope.value ?: coroutineScope,
-            count = traceCount,
+        key(traceRunId.intValue) {
+            trHandler.EachHopHandler(
+                threadMutex = threadMutex,
+                tracerouteThreadsIntList = tracerouteThreadsIntList,
+                singleHopCursor = singleHopCursor,
+                gridDataList = gridDataList,
+                scope = activeRunScope.value ?: coroutineScope,
+                count = traceCount,
 
-            timeout = traceTimeout,
-            tracerouteDNSServer = tracerouteDNSServer,
-            //testAPIText = testText,
-            currentDNSMode = currentDNSMode,
-            currentDOHServer = currentDOHServer
-        )
+                timeout = traceTimeout,
+                tracerouteDNSServer = tracerouteDNSServer,
+                //testAPIText = testText,
+                currentDNSMode = currentDNSMode,
+                currentDOHServer = currentDOHServer
+            )
+        }
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),
@@ -966,26 +976,22 @@ fun MainColumn(
                 }
             }
             val searchDatabaseResultList = remember { mutableStateListOf<String>() }
-            val scope = rememberCoroutineScope()
-            LaunchedEffect(searchText.value) {
-                scope.launch(Dispatchers.IO) {
-                    if (isSearchBarEnabled.value && searchText.value != "") {
-                        try {
+            LaunchedEffect(searchText.value, isSearchBarEnabled.value) {
+                searchDatabaseResultList.clear()
+                val query = searchText.value
+                if (isSearchBarEnabled.value && query.isNotBlank()) {
+                    delay(150)
+                    try {
+                        val results = withContext(Dispatchers.IO) {
                             db.withTransaction {
-                                searchDatabaseResultList.clear()
-                                val searchDatabaseReturn =
-                                    (historyDao.findInputIP(searchText.value) + historyDao.findInputDomain(
-                                        searchText.value
-                                    )).distinct()
-                                //only add if it's not perfectly matched
-                                if (!(searchDatabaseReturn.size == 1 && searchDatabaseReturn[0] == searchText.value)
-                                ) {
-                                    searchDatabaseResultList.addAll(searchDatabaseReturn)
-                                }
+                                (historyDao.findInputIP(query) + historyDao.findInputDomain(query)).distinct()
                             }
-                        } catch (e: Exception) {
-                            Log.e("databaseHandler", e.printStackTrace().toString())
                         }
+                        if (results != listOf(query)) searchDatabaseResultList.addAll(results)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        Log.e("databaseHandler", "Unable to search trace history", error)
                     }
                 }
             }
@@ -1079,7 +1085,7 @@ fun MainColumn(
             if (traceMapURL.value != "" && Patterns.WEB_URL.matcher(traceMapURL.value).matches()) {
                 Button(
                     onClick = {
-                        context.startActivity(
+                        context.tryStartActivity(
                             Intent(
                                 Intent.ACTION_VIEW,
                                 traceMapURL.value.toUri()
@@ -1098,7 +1104,7 @@ fun MainColumn(
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            if (hasResult && tracerouteThreadsIntList.all { it == 0 }) {
+            if (hasResult && isSearchBarEnabled.value && tracerouteThreadsIntList.all { it == 0 }) {
                 Button(
                     onClick = {
                         clipboardManager.setPrimaryClip(
@@ -1250,7 +1256,7 @@ fun MainColumn(
                                                             if (!(gridDataIndex == 0 && colIndex == 0) && !(gridDataIndex == 2 && colIndex == 1)) {
                                                                 val tapURL =
                                                                     "https://bgp.tools/search?q=" + item.value
-                                                                context.startActivity(
+                                                                context.tryStartActivity(
                                                                     Intent(
                                                                         Intent.ACTION_VIEW,
                                                                         tapURL.toUri()
@@ -1319,7 +1325,7 @@ fun SearchBar(
     genericTextColor: MutableState<Color>,
     buttonEnabledColor: MutableState<Color>
 ) {
-    // var searchText by remember { mutableStateOf("") }
+    val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
     OutlinedTextField(
         enabled = isSearchBarEnabled.value,
@@ -1339,9 +1345,13 @@ fun SearchBar(
         value = onSearchResults.value,
         onValueChange = { input ->
             if (isSearchBarEnabled.value) {
-                // Keep editing stable: normalization and trimming happen only when a trace starts.
-                // Mutating the value twice here used to reset the cursor on every keystroke.
-                onSearchResults.value = input.filterNot { it == '\n' || it == '\r' }
+                // Shorten pasted URLs before text layout/history lookup; leave typing untouched.
+                val target = normalizePastedTarget(onSearchResults.value, input)
+                if (target.length <= 4096) {
+                    onSearchResults.value = target
+                } else {
+                    Toast.makeText(context, "Target is too long. Paste a URL or hostname.", Toast.LENGTH_SHORT).show()
+                }
             }
         },
         leadingIcon = {

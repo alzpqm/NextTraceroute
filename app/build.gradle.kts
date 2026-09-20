@@ -45,8 +45,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "com.surfaceocean.nexttraceroute"
         minSdk = 26
         targetSdk = 37
-        versionCode = 20
-        versionName = "0.2.2"
+        versionCode = 21
+        versionName = "0.2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -116,7 +116,8 @@ dependencies {
 //    androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
-//    androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
 //    debugImplementation(libs.androidx.ui.tooling)
 //    debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.room.runtime)
