@@ -9,7 +9,7 @@
 - 上游：`origin` → `https://github.com/nxtrace/NextTraceroute.git`
 - 維護 Fork：`fork` → `https://github.com/alzpqm/NextTraceroute.git`
 - 目前開發分支：`codex/nexttrace-1.7.2-ui`
-- 目前穩定版：`v0.2.2`，release commit `92eaca2`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.2`。
+- 目前穩定版：`v0.2.3`，release commit `840c50b`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.3`。
 - 發佈與提交只能使用 GitHub 帳號名稱，以及 GitHub 提供的 noreply email；不可出現真名或真實 email。
 - 每次 push、tag 或 GitHub Release 前都必須完成隱私掃描。發現本機使用者名稱、絕對路徑、裝置序號、PIN、Token、密碼、私鑰、keystore、真實姓名或真實 email 時禁止發佈。
 - 隱私掃描必須涵蓋工作樹、待推送 commits、tag/commit 作者資料、APK/AAB 簽章憑證與 Release 中繼資料；掃描結果須更新在本檔。
@@ -25,8 +25,8 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行應用版本：`versionName = 0.2.2`、`versionCode = 20`
-- 後續公開版本必須高於 0.2.1，不可重複既有版本號或造成比原版更舊的觀感。
+- 現行應用版本：`versionName = 0.2.3`、`versionCode = 21`
+- 後續公開版本必須高於 0.2.3，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
 ## NextTrace 後端
@@ -50,12 +50,12 @@
 
 ## 目前工作（2026-09-20）
 
-- 本輪已接手長網址解析與頁面崩潰問題，準備 0.2.3／versionCode 21；尚未正式發佈，最後穩定版仍是 0.2.2。
+- 本輪已完成長網址解析與頁面崩潰風險修正，0.2.3／versionCode 21 已正式發佈並設為 latest；APK、AAB 與 SHA256SUMS 均已完成遠端核對。
 - 輸入改為先擷取 authority，再以有長度上限的方式驗證；貼上 URL 立即轉為主機名稱，移除可觸發 StackOverflowError 的遞迴網域 regex。
 - DNS A／AAAA 集中合併去重，支援 CNAME-only 回覆及循環防護；WebSocket 回覆先檢查 IP、型別與空值，再由主執行緒更新畫面。
 - 追蹤停止／重跑改為取消並等待前一輪工作；ping 可中斷、WebSocket 關閉、每跳查詢限制同時執行數量。歷史紀錄讀寫及外部 Intent 加入錯誤處理。
 - 本輪使用 Windows JDK 21 與 Android 37 x86_64／16 KB 模擬器；正式簽署沿用 GitHub Actions Secrets，不建立新金鑰。
-- 使用者已明確要求正式發佈並完成 GitHub CLI 授權；仍須完成最終回歸、正式產物簽章／隱私核對才可建立 Release。
+- 使用者已明確要求正式發佈並完成 GitHub CLI 授權；本輪回歸、正式產物簽章與隱私核對均完成。後續每次發佈仍須重新取得本輪發佈要求並執行檢查。
 
 - 首頁輸入框跳動已修正：移除浮動 label、固定 64 dp 高度、永久保留清除鍵槽位、單次更新輸入狀態、避免每次按鍵 `trim()`，並固定 Run 按鈕高度。
 - API 37 UI hierarchy 已確認空白聚焦、第一字、完整文字與清空後，輸入框皆為 `[68,358][768,526]`，Run 文字皆為 `[905,416][970,469]`；第一字出現時版面 bounds 不變。
@@ -74,8 +74,14 @@
 ## 驗證紀錄
 
 - 2026-09-20：確認使用者提供的 CDN 主機可正常擷取及解析，未將其臨時 URL 參數寫入測試或文件；另以長網域穩定重現舊 regex 的 StackOverflowError。
-- 2026-09-20：17 個 JVM 單元測試通過，涵蓋十萬字元 URL、過長網域、無效 IPv6、CNAME 循環與去重、異常 API JSON。第二輪 testDebugUnitTest／lintDebug／assembleDebug／assembleDebugAndroidTest 成功；API 37 操作回歸正在執行，最終版仍須重跑。
-- 2026-09-20：Windows 來源隱私等效檢查通過：可發布檔案無本機路徑、私鑰、額外憑證檔、同步副本或非 noreply email；既有待推送提交作者符合匿名身分。正式產物尚待 Actions 原有 Bash 掃描與本機核對。
+- 2026-09-20：提交 `840c50b` 已完成乾淨 `clean testDebugUnitTest lintDebug assembleDebug connectedDebugAndroidTest`，90 個 tasks 成功。18 個 JVM 測試與 4 個 API 37／16 KB 操作測試全部通過；lint 為 0 errors、5 warnings。涵蓋十萬字元 URL、過長網域、無效／等價 IPv6、CNAME 循環與去重、異常 API JSON、完整回環追蹤、四次快速停止重跑與 Activity 重建。
+- 2026-09-20：使用者提供的 CDN 網址已在 App 中成功解析，清除輸入及 IME Go 操作通過；查核模擬器 crash buffer 未見本 App 崩潰或 ANR。首輪測試揭露完成前提前顯示複製結果按鈕的時序差，已修正並通過最終回歸。
+- 2026-09-20：建置資料夾仍有舊同步產生的 ` 2` 副本，已透過 Gradle clean 清除可再生產物。曾有兩個本機 Gradle 建置互相覆寫輸出而失敗；改為單一乾淨建置後成功，後續禁止在同一工作目錄並行啟動不同 Gradle 建置。
+- 2026-09-20：GitHub 手動簽署工作流程 run `35500735918` 在提交 `840c50b` 上成功，正式 APK／AAB 通過原有 Bash 來源／產物隱私掃描。CI 淺層 checkout 跳過提交身分項目，已在本機完整 history 補核；commit、tag 與 Release 作者皆為匿名 GitHub 身分。
+- 2026-09-20：本機再次解壓逐項掃描 APK 的 153 個與 AAB 的 162 個非空 entries，未發現私有路徑、指定私人 email、憑證私鑰或 token 樣式；公開來源與 Release notes 同樣通過檢查。Secret Scanning 為 0 open alerts。
+- 2026-09-20：APK 與 AAB 憑證均與 0.2.2 相同，Subject 為 `CN=alzpqm, O=alzpqm`。模擬器已由正式 0.2.2 覆蓋升級至 0.2.3，versionCode 21、minSdk 26、targetSdk 37，冷啟動成功，未見 App crash／ANR。本輪未連接實體手機，不能視為已完成實機測試。
+- 2026-09-20：AAB 經 jarsigner 驗章成功；工具另提示自簽憑證、無 timestamp 及串流讀取時 manifest 順序警告。本輪發布目標為 GitHub，未測試 Google Play 上傳。
+- 2026-09-20：0.2.3 APK SHA-256：`c877a738846b527908485d0288323cb4b1a0a063584d645fe1043241f96371cc`；AAB：`ac8ba56c835e5672907708427dc159da6cb56236506b45163f35edacca4b79d5`；SHA256SUMS 檔：`e289ac5447a59bea5c5b508e7b0ffe61e841bce58950406c1568b5d98ea1b659`。三個 GitHub assets 的 digest 均與本機一致，正式 Release 非 draft／prerelease，tag 指向 `840c50b`。
 
 - `v0.2.0` 發佈前曾完成建置與 API 37 模擬器、Android 14 實機檢查；本輪 UI 修改後仍須重新驗證，不能沿用舊結果。
 - 2026-09-02：最後文件與署名更新後，乾淨執行 `clean testDebugUnitTest lintDebug assembleDebug` 成功，56 個 tasks 全部完成。
