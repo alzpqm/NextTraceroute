@@ -18,6 +18,7 @@ GNU General Public License for more details.
 
 package com.surfaceocean.nexttraceroute
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -56,6 +57,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
@@ -71,6 +73,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import com.google.gson.Gson
 import kotlin.math.roundToInt
 
@@ -107,10 +110,13 @@ fun SettingsColumn(
     apiHostName: MutableState<String>,
     apiDNSName: MutableState<String>
 ) {
+    val resources = LocalResources.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val tracerouteHandler = remember { TracerouteHandler() }
     val languageValues = listOf("Default", "zh", "en")
-    val languageLabels = listOf("跟隨系統", "中文", "English")
+    val languageLabels = listOf(resources.getString(R.string.language_system), resources.getString(R.string.language_chinese), resources.getString(R.string.language_english))
+    val displayLanguageLabels = listOf(resources.getString(R.string.language_chinese), resources.getString(R.string.language_english))
+    var displayLanguageIndex by remember { mutableIntStateOf(displayLanguages.indexOf(displayLanguage(context))) }
     val dnsModeValues = listOf("udp", "tcp", "doh")
 
     var languageIndex by remember { mutableIntStateOf(0) }
@@ -129,9 +135,9 @@ fun SettingsColumn(
     LaunchedEffect(Unit) {
         languageIndex = languageValues.indexOf(currentLanguage.value).coerceAtLeast(0)
         traceMapEnabled = isTraceMapEnabled.value
-        maxHop = maxTraceTTL.intValue.toFloat()
-        timeout = traceTimeout.value.toFloatOrNull()?.coerceIn(1f, 10f) ?: 1f
-        packetCount = traceCount.value.toFloatOrNull()?.coerceIn(1f, 10f) ?: 5f
+        maxHop = validIntegerSetting(maxTraceTTL.intValue, 30, 1..255).toFloat()
+        timeout = validIntegerSetting(traceTimeout.value, 1, 1..10).toFloat()
+        packetCount = validIntegerSetting(traceCount.value, 5, 1..10).toFloat()
         dnsModeIndex = dnsModeValues.indexOf(currentDNSMode.value).coerceAtLeast(0)
         dnsServer = tracerouteDNSServer.value
         dohServerIndex = dohServers.indexOf(currentDOHServer.value).coerceAtLeast(0)
@@ -159,15 +165,15 @@ fun SettingsColumn(
             return type == HOSTNAME_IDENTIFIER || type == IPV4_IDENTIFIER || type == IPV6_IDENTIFIER
         }
 
-        if (!isIp(cleanDnsServer)) errors += "UDP／TCP DNS 伺服器格式無效"
+        if (!isIp(cleanDnsServer)) errors += resources.getString(R.string.dns_server_invalid)
         if (tracerouteHandler.identifyInput(cleanPowHost) != HOSTNAME_IDENTIFIER) {
-            errors += "PoW 主機名稱格式無效"
+            errors += resources.getString(R.string.pow_host_invalid)
         }
-        if (!isHostOrIp(cleanPowDns)) errors += "PoW DNS 名稱格式無效"
+        if (!isHostOrIp(cleanPowDns)) errors += resources.getString(R.string.pow_dns_invalid)
         if (tracerouteHandler.identifyInput(cleanApiHost) != HOSTNAME_IDENTIFIER) {
-            errors += "API 主機名稱格式無效"
+            errors += resources.getString(R.string.api_host_invalid)
         }
-        if (!isHostOrIp(cleanApiDns)) errors += "API DNS 名稱格式無效"
+        if (!isHostOrIp(cleanApiDns)) errors += resources.getString(R.string.api_dns_invalid)
 
         if (errors.isNotEmpty()) {
             Toast.makeText(context, errors.joinToString("\n"), Toast.LENGTH_LONG).show()
@@ -206,10 +212,16 @@ fun SettingsColumn(
             context.openFileOutput("settings.json", Context.MODE_PRIVATE).use { output ->
                 output.write(Gson().toJson(settings).toByteArray())
             }
-            Toast.makeText(context, "設定已儲存", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, resources.getString(R.string.settings_saved), Toast.LENGTH_SHORT).show()
+            val selectedLanguage = displayLanguages[displayLanguageIndex]
+            if (selectedLanguage != displayLanguage(context)) {
+                context.getSharedPreferences(DISPLAY_LANGUAGE_PREFS, Context.MODE_PRIVATE)
+                    .edit { putString(DISPLAY_LANGUAGE_KEY, selectedLanguage) }
+                (context as? Activity)?.recreate()
+            }
         } catch (exception: Exception) {
             Log.e("SettingSaveHandler", "Unable to save settings", exception)
-            Toast.makeText(context, "無法儲存設定", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, resources.getString(R.string.settings_save_failed), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -227,22 +239,22 @@ fun SettingsColumn(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { currentPage.value = "main" }) {
-                Icon(Icons.Filled.Home, contentDescription = "返回首頁")
+                Icon(Icons.Filled.Home, contentDescription = resources.getString(R.string.action_home))
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "設定",
+                    text = resources.getString(R.string.menu_settings),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "網路探測與服務端選項",
+                    text = resources.getString(R.string.settings_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             FilledTonalButton(onClick = ::saveSettings) {
-                Text("儲存")
+                Text(resources.getString(R.string.action_save))
             }
         }
 
@@ -253,9 +265,16 @@ fun SettingsColumn(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            SettingsSection(title = "一般") {
+            SettingsSection(title = resources.getString(R.string.settings_general)) {
                 ChoiceSetting(
-                    title = "API 回應語言",
+                    title = resources.getString(R.string.display_language),
+                    selectedLabel = displayLanguageLabels[displayLanguageIndex],
+                    options = displayLanguageLabels,
+                    onSelected = { displayLanguageIndex = it }
+                )
+                SettingsDivider()
+                ChoiceSetting(
+                    title = resources.getString(R.string.api_language),
                     selectedLabel = languageLabels[languageIndex],
                     options = languageLabels,
                     onSelected = { languageIndex = it }
@@ -266,9 +285,9 @@ fun SettingsColumn(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("顯示路由地圖", style = MaterialTheme.typography.titleMedium)
+                        Text(resources.getString(R.string.show_map), style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "追蹤完成後產生 TraceMap",
+                            resources.getString(R.string.show_map_description),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -277,24 +296,24 @@ fun SettingsColumn(
                 }
             }
 
-            SettingsSection(title = "探測參數") {
+            SettingsSection(title = resources.getString(R.string.probe_settings)) {
                 NumberSliderSetting(
-                    title = "最大跳數",
+                    title = resources.getString(R.string.max_hops),
                     value = maxHop,
                     valueRange = 1f..255f,
                     onValueChange = { maxHop = it.roundToInt().toFloat() }
                 )
                 SettingsDivider()
                 NumberSliderSetting(
-                    title = "單一封包逾時",
-                    suffix = " 秒",
+                    title = resources.getString(R.string.packet_timeout),
+                    suffix = resources.getString(R.string.seconds_suffix),
                     value = timeout,
                     valueRange = 1f..10f,
                     onValueChange = { timeout = it.roundToInt().toFloat() }
                 )
                 SettingsDivider()
                 NumberSliderSetting(
-                    title = "每跳封包數",
+                    title = resources.getString(R.string.packet_count),
                     value = packetCount,
                     valueRange = 1f..10f,
                     onValueChange = { packetCount = it.roundToInt().toFloat() }
@@ -303,14 +322,14 @@ fun SettingsColumn(
 
             SettingsSection(title = "DNS") {
                 ChoiceSetting(
-                    title = "查詢模式",
+                    title = resources.getString(R.string.dns_mode),
                     selectedLabel = dnsModeValues[dnsModeIndex].uppercase(),
                     options = dnsModeValues.map { it.uppercase() },
                     onSelected = { dnsModeIndex = it }
                 )
                 Spacer(Modifier.height(12.dp))
                 SettingsTextField(
-                    label = "UDP／TCP DNS 伺服器",
+                    label = resources.getString(R.string.dns_server),
                     value = dnsServer,
                     onValueChange = { dnsServer = it.replace("\n", "") },
                     onDone = { keyboardController?.hide() }
@@ -325,32 +344,32 @@ fun SettingsColumn(
             }
 
             SettingsSection(
-                title = "進階服務端",
-                supportingText = "一般使用者不需要修改；NextTrace 預設不需要 API Token。"
+                title = resources.getString(R.string.advanced_services),
+                supportingText = resources.getString(R.string.advanced_description)
             ) {
                 SettingsTextField(
-                    label = "PoW 主機名稱",
+                    label = resources.getString(R.string.pow_host),
                     value = powHostName,
                     onValueChange = { powHostName = it.replace("\n", "") },
                     onDone = { keyboardController?.hide() }
                 )
                 Spacer(Modifier.height(12.dp))
                 SettingsTextField(
-                    label = "PoW DNS 名稱或 IP",
+                    label = resources.getString(R.string.pow_dns),
                     value = powDnsName,
                     onValueChange = { powDnsName = it.replace("\n", "") },
                     onDone = { keyboardController?.hide() }
                 )
                 Spacer(Modifier.height(12.dp))
                 SettingsTextField(
-                    label = "API 主機名稱",
+                    label = resources.getString(R.string.api_host),
                     value = apiHostNameDraft,
                     onValueChange = { apiHostNameDraft = it.replace("\n", "") },
                     onDone = { keyboardController?.hide() }
                 )
                 Spacer(Modifier.height(12.dp))
                 SettingsTextField(
-                    label = "API DNS 名稱或 IP",
+                    label = resources.getString(R.string.api_dns),
                     value = apiDnsNameDraft,
                     onValueChange = { apiDnsNameDraft = it.replace("\n", "") },
                     onDone = { keyboardController?.hide() }
@@ -358,7 +377,7 @@ fun SettingsColumn(
             }
 
             Text(
-                text = "外觀會自動跟隨 Android 的日間／夜間模式與動態色彩。",
+                text = resources.getString(R.string.appearance_description),
                 modifier = Modifier.padding(horizontal = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -460,17 +479,18 @@ private fun NumberSliderSetting(
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit
 ) {
+    val safeValue = value.takeIf { it.isFinite() }?.coerceIn(valueRange) ?: valueRange.start
     Column {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
             Text(
-                text = value.roundToInt().toString() + suffix,
+                text = safeValue.roundToInt().toString() + suffix,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
         }
         Slider(
-            value = value,
+            value = safeValue,
             onValueChange = onValueChange,
             valueRange = valueRange
         )

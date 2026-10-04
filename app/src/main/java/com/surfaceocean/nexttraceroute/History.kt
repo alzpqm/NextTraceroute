@@ -73,6 +73,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
@@ -169,6 +170,7 @@ fun HistoryPage(
     resultASColor: MutableState<Color>,
     resultPingColor: MutableState<Color>
 ) {
+    val resources = LocalResources.current
     BackHandler {
         currentPage.value = "main"
     }
@@ -198,13 +200,13 @@ fun HistoryPage(
         if (isDeleteAllTriggered.value) {
             try {
                 withContext(Dispatchers.IO) { db.withTransaction { historyDao.deleteAll() } }
-                clearDBToastInfo.value = "Database Cleared!"
+                clearDBToastInfo.value = resources.getString(R.string.history_cleared)
                 isDatabaseUpdateTriggered.value = true
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
                 Log.e("databaseHandler", "Unable to clear history", error)
-                clearDBToastInfo.value = "Unable to clear history."
+                clearDBToastInfo.value = resources.getString(R.string.history_clear_failed)
             } finally {
                 isDeleteAllTriggered.value = false
             }
@@ -222,7 +224,7 @@ fun HistoryPage(
                 throw cancelled
             } catch (error: Exception) {
                 Log.e("databaseHandler", "Unable to load history", error)
-                clearDBToastInfo.value = "Unable to load history."
+                clearDBToastInfo.value = resources.getString(R.string.history_load_failed)
             } finally {
                 isDatabaseLoadFinished.value = true
                 isDatabaseUpdateTriggered.value = false
@@ -235,13 +237,13 @@ fun HistoryPage(
         if (uuid != MAGIC_UUID) {
             try {
                 withContext(Dispatchers.IO) { db.withTransaction { historyDao.deleteByUuid(uuid) } }
-                clearDBToastInfo.value = "Item Deleted!"
+                clearDBToastInfo.value = resources.getString(R.string.history_deleted)
                 isDatabaseUpdateTriggered.value = true
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
                 Log.e("databaseHandler", "Unable to delete history", error)
-                clearDBToastInfo.value = "Unable to delete history."
+                clearDBToastInfo.value = resources.getString(R.string.history_delete_failed)
             } finally {
                 currentDeletionUUID.value = MAGIC_UUID
             }
@@ -256,10 +258,10 @@ fun HistoryPage(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { currentPage.value = "main" }) {
-            Icon(Icons.Filled.Home, contentDescription = "Home", tint = navigationIconColor.value)
+            Icon(Icons.Filled.Home, contentDescription = resources.getString(R.string.action_home), tint = navigationIconColor.value)
         }
         Text(
-            text = "History",
+            text = resources.getString(R.string.menu_history),
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleLarge,
             color = genericTextColor.value
@@ -277,7 +279,7 @@ fun HistoryPage(
             ),
             shape = RoundedCornerShape(18.dp)
         ) {
-            Text("Clear")
+            Text(resources.getString(R.string.action_clear_history))
         }
         if (showDeleteAllWarningDialog.value) {
             AlertDialog(
@@ -287,13 +289,13 @@ fun HistoryPage(
                 },
                 title = {
                     Text(
-                        text = "Warning",
+                        text = resources.getString(R.string.history_clear_title),
                         color = genericTextColor.value
                     )
                 },
                 text = {
                     Text(
-                        "Are you sure to clear the history database?",
+                        resources.getString(R.string.history_clear_confirmation),
                         color = genericTextColor.value
                     )
                 },
@@ -310,7 +312,7 @@ fun HistoryPage(
                             disabledContentColor = disabledContentColor.value
                         )
                     ) {
-                        Text("Yes")
+                        Text(resources.getString(R.string.action_confirm))
                     }
                 },
                 dismissButton = {
@@ -325,7 +327,7 @@ fun HistoryPage(
                             disabledContentColor = disabledContentColor.value
                         )
                     ) {
-                        Text("Cancel")
+                        Text(resources.getString(R.string.action_cancel))
                     }
                 }
             )
@@ -345,7 +347,7 @@ fun HistoryPage(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No trace history yet",
+                    text = resources.getString(R.string.history_empty),
                     style = MaterialTheme.typography.bodyLarge,
                     color = genericTextColor.value
                 )
@@ -357,7 +359,7 @@ fun HistoryPage(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             itemsIndexed(items = allData, key = { _, item -> item.uuid }) { allDataIndex, item ->
-                val preShareText = "Date:" + SimpleDateFormat(
+                val preShareText = resources.getString(R.string.history_date) + SimpleDateFormat(
                     "yyyy-MM-dd HH:mm:ss",
                     currentLocale
                 ).format(Date(item.timeStamp)) + "\n"
@@ -406,7 +408,7 @@ fun HistoryPage(
                                                 )
                                                 Toast.makeText(
                                                     context,
-                                                    "Copied!",
+                                                    resources.getString(R.string.copied),
                                                     Toast.LENGTH_SHORT
                                                 ).show()
                                             },
@@ -448,7 +450,7 @@ fun HistoryPage(
                                                 )
                                                 Toast.makeText(
                                                     context,
-                                                    "Copied!",
+                                                    resources.getString(R.string.copied),
                                                     Toast.LENGTH_SHORT
                                                 ).show()
                                             },
@@ -484,7 +486,7 @@ fun HistoryPage(
                         }) {
                         Icon(
                             Icons.Filled.Info,
-                            contentDescription = "Info",
+                            contentDescription = resources.getString(R.string.action_info),
                             tint = navigationIconColor.value
                         )
                     }
@@ -519,7 +521,7 @@ fun HistoryPage(
                                                 preShareText + item.history
                                             )
                                         )
-                                        Toast.makeText(context, "Copied!", Toast.LENGTH_SHORT)
+                                        Toast.makeText(context, resources.getString(R.string.copied), Toast.LENGTH_SHORT)
                                             .show()
                                     },
                                     colors = ButtonDefaults.buttonColors(
@@ -529,7 +531,7 @@ fun HistoryPage(
                                         disabledContentColor = disabledContentColor.value
                                     )
                                 ) {
-                                    Text("Copy")
+                                    Text(resources.getString(R.string.action_copy))
                                 }
                             },
                             dismissButton = {
@@ -544,7 +546,7 @@ fun HistoryPage(
                                         disabledContentColor = disabledContentColor.value
                                     )
                                 ) {
-                                    Text("OK")
+                                    Text(resources.getString(R.string.action_close))
                                 }
                             }
                         )
@@ -555,19 +557,19 @@ fun HistoryPage(
                             putExtra(Intent.EXTRA_TEXT, preShareText + item.history)
                             type = "text/plain"
                         }
-                        val chooser = Intent.createChooser(shareIntent, "Share to")
+                        val chooser = Intent.createChooser(shareIntent, resources.getString(R.string.share_to))
                         context.tryStartActivity(chooser)
                     }) {
                         Icon(
                             Icons.Filled.Share,
-                            contentDescription = "Share",
+                            contentDescription = resources.getString(R.string.action_share),
                             tint = navigationIconColor.value
                         )
                     }
                     IconButton(onClick = { currentDeletionUUID.value = item.uuid }) {
                         Icon(
                             Icons.Filled.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = resources.getString(R.string.action_delete),
                             tint = navigationIconColor.value
                         )
                     }

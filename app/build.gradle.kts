@@ -45,8 +45,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "com.surfaceocean.nexttraceroute"
         minSdk = 26
         targetSdk = 37
-        versionCode = 21
-        versionName = "0.2.3"
+        versionCode = 22
+        versionName = "0.2.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -80,6 +80,12 @@ extensions.configure<ApplicationExtension> {
         compose = true
         buildConfig = true
 
+    }
+    bundle {
+        language {
+            // Both in-app language choices must be available without downloading another split.
+            enableSplit = false
+        }
     }
     packaging {
         resources {

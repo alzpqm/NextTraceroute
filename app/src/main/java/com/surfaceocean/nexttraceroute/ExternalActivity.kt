@@ -9,8 +9,8 @@ internal fun Context.tryStartActivity(intent: Intent) {
     try {
         startActivity(intent)
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(this, "No app is available to open this link or share this result.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.external_missing), Toast.LENGTH_SHORT).show()
     } catch (_: SecurityException) {
-        Toast.makeText(this, "This action is not permitted on this device.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.external_forbidden), Toast.LENGTH_SHORT).show()
     }
 }

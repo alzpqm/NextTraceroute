@@ -25,7 +25,7 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行應用版本：`versionName = 0.2.3`、`versionCode = 21`
+- 現行原始碼版本：`versionName = 0.2.4`、`versionCode = 22`（正式發佈狀態見上方穩定版）
 - 後續公開版本必須高於 0.2.3，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
@@ -48,7 +48,25 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-09-20）
+## 目前工作（2026-10-04，0.2.4 修正與發佈）
+
+- 使用者已明確要求修正、測試及發佈 GitHub，並要求發佈前隱私與語言檢查；本輪發佈授權已取得，不需沿用前輪未授權的結論。
+- 已修正三項實機確認的問題：異常數值造成設定頁崩潰、後端不可用時遺失本地分類、查詢期間才出現的跳點缺少 metadata。新增地圖請求取消、10 秒整體逾時與 8 KiB 回應上限。
+- 依使用者選擇，中文（正體中文）為預設與第一個介面語言，英文（英式英文，en-GB）為第二個；中文介面選項簡稱「中文／英文」。API 回應語言獨立保留，兩種介面資源均隨 APK／AAB 提供。
+- 已完成 24 項 JVM 與兩平台各 13 項回歸；正式簽署前持續核對最終版、畫面、來源及匿名提交。正式產物與遠端發佈結果待本輪完成後追加，不以先前版本的證據代替。
+- 簽署沿用 GitHub Actions 的既有 Secrets 與匿名憑證，不在 Windows 建立新金鑰或輸出密碼。保留手機正式版資料，異常設定 fixture 僅能操作 Debug 套件。
+- 既有 `scripts/privacy-scan.sh` 的 mode-only 未提交變更保留，不納入本輪 commit。禁止同一工作目錄平行執行不同 Gradle 建置。
+
+### 同日較早的審查階段（保留歷史）
+
+- 本輪為 0.2.3 發佈後的 bug 審查與 Android 14／API 34 實機回歸；已完整讀取接手檔，未修改正式功能、版本號、簽署或公開發佈資訊。
+- 已確認三個待修問題：地理資訊處理會漏掉查詢等待期間才出現的跳點；後端不可用時連本地保留位址分類也缺失；異常設定值 `NaN` 會導致設定頁崩潰。詳細證據與重現方式見 `docs/BUG_AUDIT_2026-10-04.md`。
+- 已新增 Debug-only 操作與受控連線測試，保留原有正式 App 與資料。重現測試會在未修正的 0.2.3 上失敗，不能把它們忽略後宣稱所有回歸通過。
+- USB 安裝與指令曾遭遇傳輸中斷；依使用者要求改用已授權的無線 ADB，連線位址、裝置識別資料與完整系統記錄均不寫入專案。手機前景畫面切換不能作為使用者操作的證據。
+- 異常設定測試若被系統終止，`AuditSettingsRule` 的 finally 不會執行；恢復 Debug 專用備份／不存在標記後，已確認無殘留測試設定且可正常冷啟動。不可刪除或修改正式 App 設定及歷史資料。
+- 後續先取得修正要求，修正以上問題並重新執行回歸；本輪未要求發佈新版本，不建立 GitHub Release。
+
+### 前輪工作（2026-09-20，保留歷史）
 
 - 本輪已完成長網址解析與頁面崩潰風險修正，0.2.3／versionCode 21 已正式發佈並設為 latest；APK、AAB 與 SHA256SUMS 均已完成遠端核對。
 - 輸入改為先擷取 authority，再以有長度上限的方式驗證；貼上 URL 立即轉為主機名稱，移除可觸發 StackOverflowError 的遞迴網域 regex。
@@ -72,6 +90,19 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-10-04，0.2.4：`testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` 成功；24 項 JVM 測試通過，lint 為 0 errors、11 warnings（依賴更新與既有資源配置）。沒有新增依賴。
+- 2026-10-04，0.2.4：Android 14／API 34／4 KB 實機使用獨立 ADB 服務的無線連線；API 37／x86_64／16 KB 模擬器使用另一 transport。兩者均取得 `OK (13 tests)`，三項缺陷重現測試與中文／英式英文切換、Activity 重建全部通過。
+- 2026-10-04，0.2.4：來源隱私掃描包含公開檔案、私鑰／token 樣式、私人 email、本機身分與路徑、同步副本及完整歷史的維護者作者資料，未發現阻擋項目；GitHub Secret Scanning 為 0 open alerts。正式 APK／AAB 與 Release 中繼資料仍須在簽署後另行核對。
+
+- 2026-10-04：GitHub Fork 沒有新增 issue；latest 仍為 0.2.3。上游最新提交仍為 2026-08-14 的 0.1.7，未發現新的上游修正可直接套用。
+- 2026-10-04：Android 14／API 34 實機、4 KB page size、root 可用；正式套件為 0.2.3／versionCode 21，Debug 與正式版並存。原有 4 項 UI 回歸全部通過。
+- 2026-10-04：新增 7 項實機補測有 5 項通過、2 項已知缺陷失敗。通過項目為 IPv6 回環、DNS 失敗後重跑、追蹤中旋轉及停止／重建、設定儲存及重載、歷史詳細資訊往返；失敗項目分別重現本地分類依賴後端及跳點到達時序缺漏。
+- 2026-10-04：異常設定的 instrumentation 測試被系統以 ANR 終止，不能視為一般 App 使用的確定原因。另以不經測試框架的 Debug 冷啟動／設定頁操作，直接取得 `IllegalArgumentException: Cannot round NaN value`，定位 `Settings.kt` 的 `NumberSliderSetting`。
+- 2026-10-04：使用 `--rerun-tasks` 實際重新執行 18 項 JVM 測試，全部通過；修正本輪測試 fixture 的 Compose state 宣告後，lint 為 0 errors、11 warnings。警告為依賴更新及既有資源目錄配置，不是新的功能錯誤。
+- 2026-10-04：重建 androidTest APK 後，用獨立本機 ADB 服務的無線 transport 再跑 3 項複核：正常設定儲存／冷啟動通過，兩個 metadata 缺陷均再次得到相同失敗斷言。已檢查沒有異常設定或恢復標記殘留，清除本輪 UI hierarchy 暫存，Debug 首頁冷啟動成功。
+- 2026-10-04：來源靜態隱私檢查在本機以等價 PowerShell／ripgrep 規則執行，本機使用者路徑、私鑰、憑證／簽署檔案、同步副本及不允許的 email 均為 0 matches；`git diff --check` 通過。本輪未新增 commit 或正式簽署產物，因此這不是新版本完整發佈隱私驗證。
+- 2026-10-04：正式 App 版本與資料保留；已恢復 Debug 異常設定，未提交、push、tag、簽署或發佈。既有 `scripts/privacy-scan.sh` 的 mode-only 未提交變更保留、不納入本輪內容。
 
 - 2026-09-20：確認使用者提供的 CDN 主機可正常擷取及解析，未將其臨時 URL 參數寫入測試或文件；另以長網域穩定重現舊 regex 的 StackOverflowError。
 - 2026-09-20：提交 `840c50b` 已完成乾淨 `clean testDebugUnitTest lintDebug assembleDebug connectedDebugAndroidTest`，90 個 tasks 成功。18 個 JVM 測試與 4 個 API 37／16 KB 操作測試全部通過；lint 為 0 errors、5 warnings。涵蓋十萬字元 URL、過長網域、無效／等價 IPv6、CNAME 循環與去重、異常 API JSON、完整回環追蹤、四次快速停止重跑與 Activity 重建。

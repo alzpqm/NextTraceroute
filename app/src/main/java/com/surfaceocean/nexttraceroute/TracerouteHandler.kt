@@ -36,9 +36,11 @@ package com.surfaceocean.nexttraceroute
 
 
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
@@ -136,6 +138,7 @@ class TracerouteHandler {
 
 
     suspend fun testNativePing(
+        context: Context,
         v4Status: MutableState<Boolean>,
         v6Status: MutableState<Boolean>,
         errorText: MutableState<String>
@@ -158,12 +161,12 @@ class TracerouteHandler {
         if (v4Status.value && v6Status.value) {
             errorText.value = ""
         } else if (v4Status.value) {
-            errorText.value = "IPv6 native ping failed! Using linux api instead. (Unstable)"
+            errorText.value = context.getString(R.string.native_v6_unavailable)
         } else if (v6Status.value) {
-            errorText.value = "IPv4 native ping failed! Using linux api instead. (Unstable)"
+            errorText.value = context.getString(R.string.native_v4_unavailable)
         } else {
             errorText.value =
-                "IPv4 and IPv6 native ping failed! Using linux api instead. (Unstable)"
+                context.getString(R.string.native_both_unavailable)
         }
 
     }
@@ -303,69 +306,80 @@ class TracerouteHandler {
             scope.launch(Dispatchers.Main.immediate) {
                 val id = Random.nextInt(1, Int.MAX_VALUE)
                 threadMutex.withLock { tracerouteThreadsIntList.add(id) }
+                var session: GeoApiSession? = null
+                val backendDeadline = SystemClock.elapsedRealtime() + 25_000
                 try {
-                    val ready = withTimeoutOrNull(25_000) {
-                        while (apiToken.value.isEmpty() || preferredAPIIp.value.isEmpty()) delay(100)
-                        true
-                    } == true
-                    if (!ready) return@launch
-                    geoSession(apiHostName.value, preferredAPIIp.value, apiToken.value).use { session ->
-                        while (true) {
-                            val targetIndex = gridDataList.indexOfFirst { it[0][1].value == insertion.value }
-                                .let { if (it < 0) gridDataList.lastIndex else it }
-                            val rows = gridDataList.take(targetIndex + 1)
-                            for ((index, row) in rows.withIndex()) {
-                                val ip = row[0][1].value
-                                if (ip.isBlank() || ip == "*" || row[0][2].value.isNotEmpty()) continue
-                                val reserved = reservedIPFilter(ip)
-                                val data = if (reserved.isNotEmpty()) {
-                                    parseGeoResponse(Gson().toJson(mapOf("ip" to ip, "asnumber" to reserved,
-                                        "whois" to reserved)), ip)
-                                } else session.lookup(ip)
-                                // Cancellation is checked before touching shared state, even for cached replies.
-                                kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                                if (data == null) {
-                                    row[0][2].value = "*"
-                                    continue
-                                }
-                                val asNumber = data.get("asnumber").asString
-                                val chinese = currentLanguage.value == "zh" ||
-                                    (currentLanguage.value == "Default" && Locale.getDefault().language.startsWith("zh"))
-                                row[0][2].value = when {
-                                    reserved.isNotEmpty() -> reserved
-                                    asNumber.isNotBlank() -> "AS$asNumber"
-                                    else -> "*"
-                                }
-                                row[0][3].value = data.get("whois").asString.ifBlank { "*" }
-                                val suffix = if (chinese) "" else "_en"
-                                row[1][0].value = if (reserved.isNotEmpty()) reserved else
-                                    listOf("country$suffix", "prov$suffix", "city$suffix", "domain")
-                                        .map { data.get(it).asString }.filter { it.isNotBlank() }
-                                        .joinToString(" ").ifBlank { "*" }
-                                val geo = mutableMapOf<String, Any?>()
-                                for (key in listOf("ip", "asnumber", "country", "country_en", "prov", "prov_en",
-                                    "city", "city_en", "owner", "isp", "domain", "whois")) geo[key] = data.get(key).asString
-                                geo["lat"] = data.get("lat").asDouble
-                                geo["lng"] = data.get("lng").asDouble
-                                geo["district"] = ""
-                                geo["prefix"] = ""
-                                geo["router"] = emptyMap<String, Any>()
-                                geo["source"] = ""
-                                traceMapThreadsMapList.add(listOf(mutableMapOf<String, Any?>(
-                                    "Success" to true, "Address" to mapOf("IP" to ip, "zone" to ""),
-                                    "Hostname" to "", "TTL" to index + 1, "Error" to null,
-                                    "Geo" to geo, "Lang" to (if (chinese) "cn" else "en"), "MPLS" to null
-                                )))
+                    while (true) {
+                        val targetIndex = gridDataList.indexOfFirst { it[0][1].value == insertion.value }
+                            .let { if (it < 0) gridDataList.lastIndex else it }
+                        val rows = gridDataList.take(targetIndex + 1)
+                        for ((index, row) in rows.withIndex()) {
+                            val ip = row[0][1].value
+                            if (ip.isBlank() || ip == "*" || row[0][2].value.isNotEmpty()) continue
+                            val reserved = reservedIPFilter(ip)
+                            val data = if (reserved.isNotEmpty()) {
+                                parseGeoResponse(Gson().toJson(mapOf("ip" to ip, "asnumber" to reserved,
+                                    "whois" to reserved)), ip)
+                            } else {
+                                val ready = apiToken.value.isNotBlank() && preferredAPIIp.value.isNotBlank()
+                                if (!ready && SystemClock.elapsedRealtime() < backendDeadline) continue
+                                if (ready) {
+                                    val activeSession = session ?: geoSession(apiHostName.value,
+                                        preferredAPIIp.value, apiToken.value).also { session = it }
+                                    activeSession.lookup(ip)
+                                } else null
                             }
-                            if (rows.all { it[0][1].value.isNotBlank() }) break
-                            delay(200)
+                            // Cancellation is checked before touching shared state, even for cached replies.
+                            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                            if (data == null) {
+                                row[0][2].value = "*"
+                                row[0][3].value = "*"
+                                row[1][0].value = "*"
+                                continue
+                            }
+                            val asNumber = data.get("asnumber").asString
+                            val chinese = currentLanguage.value == "zh" ||
+                                (currentLanguage.value == "Default" && Locale.getDefault().language.startsWith("zh"))
+                            row[0][2].value = when {
+                                reserved.isNotEmpty() -> reserved
+                                asNumber.isNotBlank() -> "AS$asNumber"
+                                else -> "*"
+                            }
+                            row[0][3].value = data.get("whois").asString.ifBlank { "*" }
+                            val suffix = if (chinese) "" else "_en"
+                            row[1][0].value = if (reserved.isNotEmpty()) reserved else
+                                listOf("country$suffix", "prov$suffix", "city$suffix", "domain")
+                                    .map { data.get(it).asString }.filter { it.isNotBlank() }
+                                    .joinToString(" ").ifBlank { "*" }
+                            val geo = mutableMapOf<String, Any?>()
+                            for (key in listOf("ip", "asnumber", "country", "country_en", "prov", "prov_en",
+                                "city", "city_en", "owner", "isp", "domain", "whois")) geo[key] = data.get(key).asString
+                            geo["lat"] = data.get("lat").asDouble
+                            geo["lng"] = data.get("lng").asDouble
+                            geo["district"] = ""
+                            geo["prefix"] = ""
+                            geo["router"] = emptyMap<String, Any>()
+                            geo["source"] = ""
+                            traceMapThreadsMapList.add(listOf(mutableMapOf<String, Any?>(
+                                "Success" to true, "Address" to mapOf("IP" to ip, "zone" to ""),
+                                "Hostname" to "", "TTL" to index + 1, "Error" to null,
+                                "Geo" to geo, "Lang" to (if (chinese) "cn" else "en"), "MPLS" to null
+                            )))
                         }
+                        // A hop can arrive while another lookup is suspended. Its IP alone
+                        // does not mean its metadata has been processed yet.
+                        if (rows.all {
+                            val ip = it[0][1].value
+                            ip == "*" || (ip.isNotBlank() && it[0][2].value.isNotBlank())
+                        }) break
+                        delay(200)
                     }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
                     Log.e("mainWSHandler", "Geo lookup failed", error)
                 } finally {
+                    session?.close()
                     withContext(NonCancellable + Dispatchers.Main.immediate) {
                         isAPIFinished.value = true
                         threadMutex.withLock {
@@ -440,6 +454,7 @@ class TracerouteHandler {
         apiToken: MutableState<String>, currentDOHServer: MutableState<String>,
         currentDNSMode: MutableState<String>
     ) {
+        val resources = LocalResources.current
         LaunchedEffect(Unit) {
             scope.launch(Dispatchers.Main.immediate) {
                 val uniqueID = Random.nextInt(1, Int.MAX_VALUE)
@@ -460,13 +475,13 @@ class TracerouteHandler {
                         preferredAPIIpPOW.value = result.first
                         apiToken.value = result.second
                     } else {
-                        testAPIText.value = "IP location service unavailable. Route tracing can continue."
+                        testAPIText.value = resources.getString(R.string.location_unavailable)
                     }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
                     Log.e("APIPowHandler", "Location service unavailable", error)
-                    testAPIText.value = "IP location service unavailable. Route tracing can continue."
+                    testAPIText.value = resources.getString(R.string.location_unavailable)
                 } finally {
                     withContext(NonCancellable + Dispatchers.Main.immediate) {
                         threadMutex.withLock {
@@ -617,7 +632,7 @@ class TracerouteHandler {
                     if (multipleIps.isEmpty()) {
 
                         insertErrorText.value =
-                            "No DNS response yet! Check hostname and DNS setting!"
+                            context.getString(R.string.dns_no_response)
                         isSearchBarEnabled.value = true
                     }
                     threadMutex.withLock {
@@ -631,7 +646,7 @@ class TracerouteHandler {
                 }
             }
         } else {
-            Toast.makeText(context, "Invalid input! Wait 2 Seconds", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.invalid_target), Toast.LENGTH_LONG).show()
         }
 
         if (inputType == IPV4_IDENTIFIER || inputType == IPV6_IDENTIFIER) {
@@ -711,118 +726,52 @@ class TracerouteHandler {
             )
 
 
-            //tracemap handler
             if (isTraceMapEnabled.value) {
                 LaunchedEffect(Unit) {
-                    scope.launch(Dispatchers.IO) {
-                        val uniqueID = Random.nextInt(1, Int.MAX_VALUE)
-                        threadMutex.withLock { tracerouteThreadsIntList.add(uniqueID) }
-
-
-                        while (true) {
-                            delay(timeMillis = 500)
-                            if (isAPIFinished.value) {
-                                break
-                            }
-                        }
-                        //ggbang
-                        //testAPIText.value=traceMapThreadsMapList.size.toString()
-                        if (traceMapThreadsMapList.isEmpty()) {
-                            threadMutex.withLock {
-                                tracerouteThreadsIntList.indices.forEach { index ->
-                                    if (tracerouteThreadsIntList[index] == uniqueID) {
-                                        tracerouteThreadsIntList[index] = 0
-                                    }
-                                }
-                                tracerouteThreadsIntList.add(0)
-                            }
-                            return@launch
-                        }
-                        val tempList = mutableListOf<List<MutableMap<String, Any?>>>()
-                        for (i in traceMapThreadsMapList) {
-                            var isDuplicate = false
-                            for (j in tempList) {
-                                if (i[0]["Address"] == j[0]["Address"]) {
-                                    isDuplicate = true
-                                }
-                            }
-                            if (!isDuplicate) {
-                                tempList.add(i)
-                            }
-                        }
-                        tempList.sortBy { it[0]["TTL"] as? Int ?: 0 }
+                    scope.launch(Dispatchers.Main.immediate) {
+                        val id = Random.nextInt(1, Int.MAX_VALUE)
+                        threadMutex.withLock { tracerouteThreadsIntList.add(id) }
                         try {
-                            val clientBuilder = OkHttpClient.Builder()
-                                .connectTimeout(5, TimeUnit.SECONDS)
-                                .readTimeout(5, TimeUnit.SECONDS)
-                                .writeTimeout(5, TimeUnit.SECONDS)
-                            if (preferredAPIIp.value.isNotBlank()) {
-                                clientBuilder.dns {
-                                    InetAddress.getAllByName(preferredAPIIp.value).toList()
+                            while (!isAPIFinished.value) delay(100)
+                            // Metadata is complete: take a stable snapshot before leaving Main.
+                            val hops = traceMapThreadsMapList
+                                .distinctBy { it[0]["Address"] }
+                                .sortedBy { it[0]["TTL"] as? Int ?: 0 }
+                            if (hops.isEmpty()) return@launch
+                            val host = apiHostName.value
+                            val backendIp = preferredAPIIp.value
+                            val url = withContext(Dispatchers.IO) {
+                                val builder = OkHttpClient.Builder()
+                                    .connectTimeout(5, TimeUnit.SECONDS)
+                                    .readTimeout(5, TimeUnit.SECONDS)
+                                    .writeTimeout(5, TimeUnit.SECONDS)
+                                    .callTimeout(10, TimeUnit.SECONDS)
+                                if (backendIp.isNotBlank()) {
+                                    builder.dns { InetAddress.getAllByName(backendIp).toList() }
+                                }
+                                val payload = GsonBuilder().serializeNulls().create()
+                                    .toJson(mapOf("Hops" to hops, "TraceMapUrl" to ""))
+                                val request = Request.Builder()
+                                    .url("https://$host/tracemap/api")
+                                    .header("User-Agent", "NextTrace v$NEXTTRACE_CORE_VERSION/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME)
+                                    .post(payload.toRequestBody("application/json".toMediaType()))
+                                    .build()
+                                builder.build().newCall(request).awaitTraceMapUrl()
+                            }
+                            traceMapURL.value = url.orEmpty()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (error: Exception) {
+                            Log.e("TraceMap", "Unable to create route map", error)
+                        } finally {
+                            withContext(NonCancellable + Dispatchers.Main.immediate) {
+                                threadMutex.withLock {
+                                    tracerouteThreadsIntList.replaceAll { if (it == id) 0 else it }
                                 }
                             }
-                            val client = clientBuilder.build()
-                            val submitTraceMapList = mapOf(
-                                "Hops" to tempList,
-                                "TraceMapUrl" to ""
-                            )
-                            val submitTraceMapJson =
-                                GsonBuilder().serializeNulls().create().toJson(submitTraceMapList)
-                            //testAPIText.value=submitTraceMapJson
-                            val submitTraceMapType = "application/json".toMediaType()
-                            val submitTraceMapBody =
-                                submitTraceMapJson.toRequestBody(submitTraceMapType)
-                            val submitTraceMapHeaders = mapOf(
-                                "Host" to apiHostName.value,
-                                "User-Agent" to "NextTrace v$NEXTTRACE_CORE_VERSION/linux/android NextTracerouteAndroid/" + BuildConfig.VERSION_NAME,
-                                "Content-Length" to submitTraceMapBody.contentLength().toString(),
-                                "Content-Type" to "application/json"
-                            )
-                            val submitTraceMapURL = "https://" + apiHostName.value + "/tracemap/api"
-                            val submitTraceMapRequest = Request.Builder()
-                                .url(submitTraceMapURL).post(submitTraceMapBody)
-                            submitTraceMapHeaders.forEach { (key, value) ->
-                                submitTraceMapRequest.addHeader(key, value)
-                            }
-                            val submitBuilder = submitTraceMapRequest.build()
-                            val submitTraceMapCall = client.newCall(submitBuilder).execute()
-                            val receiveTraceMapData = submitTraceMapCall.body.string()
-                            //testAPIText.value= submitTraceMapCall.code.toString()
-                            if (submitTraceMapCall.isSuccessful) {
-                                if (receiveTraceMapData != "") {
-                                    withContext(Dispatchers.Main.immediate) {
-                                        traceMapURL.value = receiveTraceMapData
-                                    }
-                                    //testAPIText.value=traceMapURL.value
-                                }
-                            }
-                            submitTraceMapCall.close()
-                        } catch (e: Exception) {
-                            Log.e("InsertHandler", "", e)
-                            threadMutex.withLock {
-                                tracerouteThreadsIntList.indices.forEach { index ->
-                                    if (tracerouteThreadsIntList[index] == uniqueID) {
-                                        tracerouteThreadsIntList[index] = 0
-                                    }
-                                }
-                                tracerouteThreadsIntList.add(0)
-                            }
-                            return@launch
                         }
-
-
-                        threadMutex.withLock {
-                            tracerouteThreadsIntList.indices.forEach { index ->
-                                if (tracerouteThreadsIntList[index] == uniqueID) {
-                                    tracerouteThreadsIntList[index] = 0
-                                }
-                            }
-                            tracerouteThreadsIntList.add(0)
-                        }
-
                     }
                 }
-
             }
 
 

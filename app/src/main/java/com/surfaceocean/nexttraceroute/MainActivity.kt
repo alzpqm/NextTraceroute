@@ -101,6 +101,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
@@ -148,6 +149,10 @@ import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(localizedContext(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -179,6 +184,7 @@ class MainActivity : ComponentActivity() {
                     val isSearchBarEnabled = remember { mutableStateOf(true) }
                     val currentPage = remember { mutableStateOf("main") }
                     val context = LocalContext.current
+                    val resources = LocalResources.current
                     val currentLanguage =
                         remember { mutableStateOf("Default") } // Default, zh or en
                     val isTraceMapEnabled = remember { mutableStateOf(true) }
@@ -227,15 +233,9 @@ class MainActivity : ComponentActivity() {
                                     (settingsMap["isTraceMapEnabled"] as? Boolean)?.let {
                                         isTraceMapEnabled.value = it
                                     }
-                                    settingsMap["maxTraceTTL"]?.toString()?.toDoubleOrNull()?.toInt()
-                                        ?.takeIf { it in 1..255 }
-                                        ?.let { maxTraceTTL.intValue = it }
-                                    (settingsMap["traceTimeout"] as? String)?.let {
-                                        traceTimeout.value = it
-                                    }
-                                    (settingsMap["traceCount"] as? String)?.let {
-                                        traceCount.value = it
-                                    }
+                                    maxTraceTTL.intValue = validIntegerSetting(settingsMap["maxTraceTTL"], 30, 1..255)
+                                    traceTimeout.value = validIntegerSetting(settingsMap["traceTimeout"], 1, 1..10).toString()
+                                    traceCount.value = validIntegerSetting(settingsMap["traceCount"], 5, 1..10).toString()
                                     (settingsMap["currentDNSMode"] as? String)?.let {
                                         currentDNSMode.value = it
                                     }
@@ -281,7 +281,7 @@ class MainActivity : ComponentActivity() {
                         } else {
                             Toast.makeText(
                                 context,
-                                "Press again to exit this program!",
+                                resources.getString(R.string.press_again_exit),
                                 Toast.LENGTH_SHORT
                             ).show()
                             lastBackPress.longValue = System.currentTimeMillis()
@@ -405,6 +405,7 @@ fun AboutPage(
     navigationIconColor: MutableState<Color>
 
 ) {
+    val resources = LocalResources.current
     BackHandler {
         currentPage.value = "main"
     }
@@ -419,7 +420,7 @@ fun AboutPage(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { currentPage.value = "main" }) {
-            Icon(Icons.Filled.Home, contentDescription = "Home", tint = navigationIconColor.value)
+            Icon(Icons.Filled.Home, contentDescription = resources.getString(R.string.action_home), tint = navigationIconColor.value)
         }
     }
     Spacer(modifier = Modifier.height(8.dp))
@@ -427,36 +428,7 @@ fun AboutPage(
     Column(modifier = Modifier.verticalScroll(scrollState)) {
         Text(
             color = genericTextColor.value,
-            text = "NextTraceroute version " +
-                    BuildConfig.VERSION_NAME + ", an Android traceroute app using Nexttrace API\n" +
-                    "NextTrace core/API compatibility: v" + NEXTTRACE_CORE_VERSION + "\n" +
-                    "Copyright (C) 2024-2026 surfaceocean\n" +
-                    "Project: https://github.com/alzpqm/NextTraceroute\n" +
-                    "Upstream: https://github.com/nxtrace/NextTraceroute\n" +
-                    "This program is free software: you can redistribute it and/or modify\n" +
-                    "it under the terms of the GNU General Public License as published by\n" +
-                    "the Free Software Foundation, either version 3 of the License, or\n" +
-                    "any later version.\n" +
-                    "\n" +
-                    "This program is distributed in the hope that it will be useful,\n" +
-                    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n" +
-                    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n" +
-                    "GNU General Public License for more details.\n" +
-                    "\n" +
-                    "You should have received a copy of the GNU General Public License\n" +
-                    "along with this program in the LICENSE file.  If not, see <https://www.gnu.org/licenses/>.\n" +
-                    "\n" +
-                    "Disclaimer: The NextTrace API (hosted at nxtrace.org) used by default in this program is not managed by the program's developer.\n" +
-                    "We do not guarantee the performance, accuracy, or any other aspect of the NextTrace API,\n" +
-                    "nor do we endorse, approve, or guarantee the results returned by the NextTrace API. Users may customize the API server address themselves.\n\n" +
-                    "This project uses the libraries listed below. Detailed information can be found in the LICENSE file of this project.\n" +
-                    "The \"dnsjava\" library is licensed under the BSD 3-Clause License.\n" +
-                    "The \"seancfoley/IPAddress\" library is licensed under the Apache 2.0 License.\n" +
-                    "The \"square/okhttp\" library is licensed under the Apache 2.0 License.\n" +
-                    "The \"gson\" library is licensed under the Apache 2.0 License.\n" +
-                    "The \"slf4j-android\" library is licensed under the MIT License.\n" +
-                    "The \"androidx\" library is licensed under the Apache 2.0 License.\n" +
-                    "\n",
+            text = resources.getString(R.string.about_text, BuildConfig.VERSION_NAME, NEXTTRACE_CORE_VERSION),
             modifier = Modifier
         )
     }
@@ -475,6 +447,7 @@ fun MyTopAppBar(
     genericTextColor: MutableState<Color>,
     navigationIconColor: MutableState<Color>
 ) {
+    val resources = LocalResources.current
     var showMenu by remember { mutableStateOf(false) }
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
@@ -498,7 +471,7 @@ fun MyTopAppBar(
             ) {
                 Icon(
                     Icons.Filled.MoreVert,
-                    contentDescription = "More",
+                    contentDescription = resources.getString(R.string.menu_more),
                     tint = navigationIconColor.value
                 )
             }
@@ -512,7 +485,7 @@ fun MyTopAppBar(
                     modifier = Modifier.background(backgroundColor.value),
                     text = {
                         Text(
-                            "Settings",
+                            resources.getString(R.string.menu_settings),
                             color = if (isSearchBarEnabled.value) genericTextColor.value else disabledContentColor.value
                         )
                     },
@@ -526,7 +499,7 @@ fun MyTopAppBar(
                     modifier = Modifier.background(backgroundColor.value),
                     text = {
                         Text(
-                            "History",
+                            resources.getString(R.string.menu_history),
                             color = if (isSearchBarEnabled.value) genericTextColor.value else disabledContentColor.value
                         )
                     },
@@ -540,7 +513,7 @@ fun MyTopAppBar(
                     modifier = Modifier.background(backgroundColor.value),
                     text = {
                         Text(
-                            "About",
+                            resources.getString(R.string.menu_about),
                             color = if (isSearchBarEnabled.value) genericTextColor.value else disabledContentColor.value
                         )
                     },
@@ -554,13 +527,13 @@ fun MyTopAppBar(
                     modifier = Modifier.background(backgroundColor.value),
                     text = {
                         Text(
-                            "Privacy Policy",
+                            resources.getString(R.string.privacy_policy),
                             color = if (isSearchBarEnabled.value) genericTextColor.value else disabledContentColor.value
                         )
                     },
                     onClick = {
                         val privacyURL =
-                            "https://github.com/nxtrace/NextTraceroute/blob/master/PrivacyPolicy.md"
+                            "https://github.com/alzpqm/NextTraceroute/blob/master/PrivacyPolicy.md"
                         context.tryStartActivity(
                             Intent(
                                 Intent.ACTION_VIEW,
@@ -713,6 +686,7 @@ fun MainColumn(
     resultASColor: MutableState<Color>,
     resultPingColor: MutableState<Color>
 ) {
+    val resources = LocalResources.current
 
     val threadMutex = remember { Mutex() }
     val tracerouteThreadsIntList = remember { mutableStateListOf<Int>() }
@@ -776,7 +750,7 @@ fun MainColumn(
     val cancelTrace: () -> Unit = {
         if (!stopping) {
             stopping = true
-            testText.value = "Stopping trace…"
+            testText.value = resources.getString(R.string.trace_stopping)
             coroutineScope.launch {
                 activeRunScope.value?.coroutineContext?.get(Job)?.cancelAndJoin()
                 activeRunScope.value = null
@@ -785,7 +759,7 @@ fun MainColumn(
                 isDNSInProgress.value = false
                 isAPIFinished.value = true
                 isSearchBarEnabled.value = true
-                testText.value = "Trace stopped."
+                testText.value = resources.getString(R.string.trace_stopped)
                 stopping = false
             }
         }
@@ -797,7 +771,7 @@ fun MainColumn(
         val normalizedTarget = normalizeTargetInput(searchText.value)
         if (trHandler.identifyInput(normalizedTarget) == ERROR_IDENTIFIER) {
             isButtonClicked.value = false
-            insertErrorText.value = "Enter a valid hostname, IPv4, IPv6 address or URL."
+            insertErrorText.value = resources.getString(R.string.invalid_target)
             return@LaunchedEffect
         }
 
@@ -851,6 +825,7 @@ fun MainColumn(
             if (traceRunId.intValue > 0) {
                 activeRunScope.value?.launch(Dispatchers.Main.immediate) {
                     trHandler.testNativePing(
+                        context = context,
                         v4Status = isNativePing4Available,
                         v6Status = isNativePing6Available,
                         errorText = nativePingCheckErrorText
@@ -972,7 +947,7 @@ fun MainColumn(
                 ) {
                     Icon(Icons.Filled.PlayArrow, contentDescription = null)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Run")
+                    Text(resources.getString(R.string.action_run))
                 }
             }
             val searchDatabaseResultList = remember { mutableStateListOf<String>() }
@@ -1026,7 +1001,7 @@ fun MainColumn(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Tracing route…",
+                            text = resources.getString(R.string.trace_running),
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.titleSmall,
                             color = genericTextColor.value
@@ -1037,7 +1012,7 @@ fun MainColumn(
                         ) {
                             Icon(Icons.Filled.Close, contentDescription = null)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Stop")
+                            Text(resources.getString(R.string.action_stop))
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
@@ -1100,7 +1075,7 @@ fun MainColumn(
                     ),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Open map")
+                    Text(resources.getString(R.string.action_open_map))
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -1110,7 +1085,7 @@ fun MainColumn(
                         clipboardManager.setPrimaryClip(
                             ClipData.newPlainText("simple text", copyHistory.value)
                         )
-                        Toast.makeText(context, "Copied!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, resources.getString(R.string.copied), Toast.LENGTH_SHORT).show()
 
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -1121,7 +1096,7 @@ fun MainColumn(
                     ),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Copy result")
+                    Text(resources.getString(R.string.action_copy_result))
                 }
             }
         }
@@ -1157,7 +1132,7 @@ fun MainColumn(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "Choose an address",
+                        text = resources.getString(R.string.choose_address),
                         style = MaterialTheme.typography.titleSmall,
                         color = genericTextColor.value
                     )
@@ -1247,7 +1222,7 @@ fun MainColumn(
                                                         )
                                                         Toast.makeText(
                                                             context,
-                                                            "Copied!",
+                                                            resources.getString(R.string.copied),
                                                             Toast.LENGTH_SHORT
                                                         ).show()
                                                     },
@@ -1326,6 +1301,7 @@ fun SearchBar(
     buttonEnabledColor: MutableState<Color>
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val keyboardController = LocalSoftwareKeyboardController.current
     OutlinedTextField(
         enabled = isSearchBarEnabled.value,
@@ -1350,14 +1326,14 @@ fun SearchBar(
                 if (target.length <= 4096) {
                     onSearchResults.value = target
                 } else {
-                    Toast.makeText(context, "Target is too long. Paste a URL or hostname.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, resources.getString(R.string.target_too_long), Toast.LENGTH_SHORT).show()
                 }
             }
         },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Target"
+                contentDescription = resources.getString(R.string.target)
             )
         },
         trailingIcon = {
@@ -1370,7 +1346,7 @@ fun SearchBar(
             ) {
                 if (onSearchResults.value.isNotEmpty()) {
                     IconButton(onClick = { onSearchResults.value = "" }) {
-                        Icon(Icons.Filled.Clear, contentDescription = "Clear target")
+                        Icon(Icons.Filled.Clear, contentDescription = resources.getString(R.string.action_clear_target))
                     }
                 }
             }
@@ -1389,7 +1365,7 @@ fun SearchBar(
         ),
         placeholder = {
             Text(
-                text = "Domain, IP or URL",
+                text = resources.getString(R.string.target_placeholder),
                 color = genericTextColor.value.copy(alpha = 0.7f),
                 maxLines = 1
             )
@@ -1397,7 +1373,7 @@ fun SearchBar(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .semantics { contentDescription = "Trace target" },
+            .semantics { contentDescription = resources.getString(R.string.target) },
         shape = RoundedCornerShape(20.dp)
     )
 
