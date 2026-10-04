@@ -9,7 +9,7 @@
 - 上游：`origin` → `https://github.com/nxtrace/NextTraceroute.git`
 - 維護 Fork：`fork` → `https://github.com/alzpqm/NextTraceroute.git`
 - 目前開發分支：`codex/nexttrace-1.7.2-ui`
-- 目前穩定版：`v0.2.3`，release commit `840c50b`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.3`。
+- 目前穩定版：`v0.2.4`，release commit `9c93928`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.4`。
 - 發佈與提交只能使用 GitHub 帳號名稱，以及 GitHub 提供的 noreply email；不可出現真名或真實 email。
 - 每次 push、tag 或 GitHub Release 前都必須完成隱私掃描。發現本機使用者名稱、絕對路徑、裝置序號、PIN、Token、密碼、私鑰、keystore、真實姓名或真實 email 時禁止發佈。
 - 隱私掃描必須涵蓋工作樹、待推送 commits、tag/commit 作者資料、APK/AAB 簽章憑證與 Release 中繼資料；掃描結果須更新在本檔。
@@ -25,8 +25,8 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行原始碼版本：`versionName = 0.2.4`、`versionCode = 22`（正式發佈狀態見上方穩定版）
-- 後續公開版本必須高於 0.2.3，不可重複既有版本號或造成比原版更舊的觀感。
+- 現行正式版：`versionName = 0.2.4`、`versionCode = 22`
+- 後續公開版本必須高於 0.2.4，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
 ## NextTrace 後端
@@ -48,14 +48,16 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-10-04，0.2.4 修正與發佈）
+## 目前工作（2026-10-05，0.2.4 已完成發佈）
 
 - 使用者已明確要求修正、測試及發佈 GitHub，並要求發佈前隱私與語言檢查；本輪發佈授權已取得，不需沿用前輪未授權的結論。
 - 已修正三項實機確認的問題：異常數值造成設定頁崩潰、後端不可用時遺失本地分類、查詢期間才出現的跳點缺少 metadata。新增地圖請求取消、10 秒整體逾時與 8 KiB 回應上限。
 - 依使用者選擇，中文（正體中文）為預設與第一個介面語言，英文（英式英文，en-GB）為第二個；中文介面選項簡稱「中文／英文」。API 回應語言獨立保留，兩種介面資源均隨 APK／AAB 提供。
-- 已完成 24 項 JVM 與兩平台各 13 項回歸；正式簽署前持續核對最終版、畫面、來源及匿名提交。正式產物與遠端發佈結果待本輪完成後追加，不以先前版本的證據代替。
+- 0.2.4 已正式發佈並設為 latest，包含 APK、AAB 與 SHA256SUMS；tag 指向已通過簽署建置的 `9c93928`。24 項 JVM、兩平台各 13 項回歸、正式升級、來源／產物隱私、匿名提交／tag、憑證及 GitHub 遠端資產雜湊均已核對。
+- README 已更新為 0.2.4 與中文「開始／停止」操作，首頁截圖來自無個人資料的 API 37 正式版模擬器。測試報告及版本說明位於 `docs/BUG_AUDIT_2026-10-04.md` 與 `docs/releases/v0.2.4.md`。
 - 簽署沿用 GitHub Actions 的既有 Secrets 與匿名憑證，不在 Windows 建立新金鑰或輸出密碼。保留手機正式版資料，異常設定 fixture 僅能操作 Debug 套件。
 - 既有 `scripts/privacy-scan.sh` 的 mode-only 未提交變更保留，不納入本輪 commit。禁止同一工作目錄平行執行不同 Gradle 建置。
+- 實機完成升級、資料核對、中文冷啟動及設定頁檢查後，無線 ADB 中斷；重連未成功，未據此推定使用者操作或 App 崩潰。正式版資料未清除；本輪曾使用的手機 `/data/local/tmp/nexttraceroute-release-ui.xml` 僅為本機 UI 暫存，斷線後無法再清理，後續連線可只移除此檔，不可擴大刪除範圍。模擬器的本輪 UI 暫存已清除、夜間模式已恢復原值。
 
 ### 同日較早的審查階段（保留歷史）
 
@@ -90,6 +92,13 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-10-05，0.2.4 發佈收尾：GitHub Actions run `37180588454` 在 `9c93928` 成功完成正式建置、測試、lint、Bash 來源／產物隱私掃描及暫存上傳。最終程式碼在 Android 14 實機、API 37 模擬器各再次取得 `OK (13 tests)`。
+- 2026-10-05：APK 的 153 個、AAB 的 162 個非空 ZIP entries 均在本機再次逐項掃描，包括 UTF-8／UTF-16、本機身分與路徑、裝置識別資料、私人 email、token 及私鑰樣式，無阻擋項目。公開來源、發佈文字、匿名 commit／tag、Release 作者及資產上傳者均已核對；GitHub Secret Scanning 為 0 open alerts。
+- 2026-10-05：APK、AAB 憑證均為 `CN=alzpqm, O=alzpqm`，SHA-256 `b31af4586d6222c20bfaf0af6b6359023818714ddf57b022fdea67e115d223a9`，與既有正式版一致。APK 驗章及 16 KB zipalign 通過；AAB 的 jarsigner 驗章成功，仍有自簽、無 timestamp、ZIP 屬性及串流 manifest 順序提示。未驗證 Google Play 上傳。
+- 2026-10-05：手機與模擬器均由正式 0.2.3 以覆蓋安裝升級至 0.2.4／versionCode 22，minSdk 26、targetSdk 37。手機升級前後、首次開啟新版前，既有資料檔雜湊完全一致；未解除安裝或清除資料。手機中文首頁／設定頁成功，模擬器正式包回環追蹤完成、顯示 RFC1122 及複製結果；當次 App 程序 crash buffer 無 fatal 記錄。
+- 2026-10-05：中文深色設定、英文淺色設定與歷史頁完成視覺檢查，文字與控制項未見重疊。語言切換在 Activity 重建與冷啟動後保留；介面與 API 語言選項分離。
+- 2026-10-05：0.2.4 APK SHA-256 `707bef4d366e7386c389c90304b6e859c82d0aa0dd59a0cff7eb5c8fe9f7ea07`；AAB `ad423bdb5d33a9b04b0ecf467960b04f16be6b3e0e8140bdb5ef919c68a1113f`；SHA256SUMS 檔 `d6bbc034e9f4f6e52c31d400917baf713143934985be259b3512cb6b199dd970`。三個 GitHub assets digest 均一致；Release 非 draft／prerelease 且為 latest，遠端 tag 指向 `9c93928`，版本說明與審查檔案一致。
 
 - 2026-10-04，0.2.4：`testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` 成功；24 項 JVM 測試通過，lint 為 0 errors、11 warnings（依賴更新與既有資源配置）。沒有新增依賴。
 - 2026-10-04，0.2.4：Android 14／API 34／4 KB 實機使用獨立 ADB 服務的無線連線；API 37／x86_64／16 KB 模擬器使用另一 transport。兩者均取得 `OK (13 tests)`，三項缺陷重現測試與中文／英式英文切換、Activity 重建全部通過。
