@@ -9,7 +9,7 @@
 - 上游：`origin` → `https://github.com/nxtrace/NextTraceroute.git`
 - 維護 Fork：`fork` → `https://github.com/alzpqm/NextTraceroute.git`
 - 目前開發分支：`codex/nexttrace-1.7.2-ui`
-- 目前穩定版：`v0.2.5`，release commit `c97ff50`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.5`。
+- 目前穩定版：`v0.2.6`，release commit `96cfb27`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.6`。
 - 發佈與提交只能使用 GitHub 帳號名稱，以及 GitHub 提供的 noreply email；不可出現真名或真實 email。
 - 每次 push、tag 或 GitHub Release 前都必須完成隱私掃描。發現本機使用者名稱、絕對路徑、裝置序號、PIN、Token、密碼、私鑰、keystore、真實姓名或真實 email 時禁止發佈。
 - 隱私掃描必須涵蓋工作樹、待推送 commits、tag/commit 作者資料、APK/AAB 簽章憑證與 Release 中繼資料；掃描結果須更新在本檔。
@@ -25,8 +25,8 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行正式版：`versionName = 0.2.5`、`versionCode = 23`。
-- 後續公開版本必須高於 0.2.5，不可重複既有版本號或造成比原版更舊的觀感。
+- 現行正式版：`versionName = 0.2.6`、`versionCode = 24`。
+- 後續公開版本必須高於 0.2.6，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
 ## NextTrace 後端
@@ -51,7 +51,7 @@
 ## 目前工作（2026-10-29，追蹤結果排版修復）
 
 - 修正長 IPv6 位址耗盡結果列空間、使 AS 編號逐字換行或消失的問題。欄位依可用寬度自動換列，完整顯示位址並保留各欄點按及長按；較長主機名稱與延遲欄位同樣受惠。
-- 準備 0.2.6／versionCode 24 的簽署更新；發布狀態及產物驗證應以本檔後續紀錄為準。歷史 Release、APK／AAB 與標籤均保留。
+- 0.2.6／versionCode 24 已簽署並正式發布為 latest。歷史 Release、APK／AAB 與標籤均保留。
 - Gemini 完成一次匿名化意見；Claude 與 DeepSeek 的回執未通過各自成功條件，不能當作成功覆核。使用量、限制與採納理由記於私人接手檔；主代理以裝置測試獨立驗證。
 - 目前可見的實體手機並非使用者指定的 OnePlus，本輪沒有對它執行測試、安裝或移除操作；改以 API 37／16 KB 模擬器驗證。原有 `scripts/privacy-scan.sh` mode-only 變更保留，未納入本輪提交。
 
@@ -136,6 +136,11 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-10-29，0.2.6 發布：GitHub Actions run `40762078499` 在 `96cfb27` 成功完成正式建置、測試、lint、來源與產物隱私掃描。另於本機掃描 APK 的 153 個及 AAB 的 162 個非空項目，檢查 UTF-8／UTF-16LE、本機身分及路徑、私人 email、私鑰和 token 樣式，未發現阻擋項目；GitHub Secret Scanning 為 0 open alerts。
+- 2026-10-29：APK／AAB 驗章成功且憑證與既有正式版一致，APK 的 package、0.2.6／code 24、minSdk 26、targetSdk 37 與 16 KB 對齊通過。AAB 仍有自簽憑證、無 timestamp 及串流 manifest 順序等既有提示；未驗證 Google Play 上傳。
+- 2026-10-29：API 37 模擬器由正式 0.2.5 直接覆蓋升級至 0.2.6，升級後首次開啟前，既有設定檔與歷史資料庫雜湊不變；新版本冷啟動並保持執行，目前程序無 AndroidRuntime fatal 記錄。未在 OnePlus 實機驗證本次更新。
+- 2026-10-29：APK SHA-256 `dc71e705b436421db17382694e4f37a329ead4359908a45822dcbf79822d731d`；AAB `3b20fe173c88bcbd7e3e959e1b3842485be508db89f218de02e4d88dbac19ec4`；SHA256SUMS 檔 `982e04addab8683d8d733bf8e1324aaa7d23d673901fcbca7cf9a248a6acacbd`。三個 GitHub assets 的遠端 digest 與本機一致，Release 非 draft／prerelease，tag 指向 `96cfb27`。
 
 - 2026-10-29：修復前以 280 dp 欄位測試長 IPv6 及 AS，標準字體與 1.8 倍字體均重現 AS 無法顯示；修復後在 API 37／16 KB 模擬器取得 `OK (20 tests)`，含 4 項新版面測試。測試檢查實際文字換行、內容完整、欄位不重疊、點按及長按，以及短 IPv4、長主機名稱和延遲欄位。
 - 2026-10-29：`testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` 成功，28 項 JVM 測試通過，lint 0 errors、13 項既有 warnings。以公開檔案執行 Windows 等價來源隱私掃描，無本機路徑、身分、私鑰、token、非允許 email 或簽署檔案；正式產物、提交與 Release 另需驗證。
