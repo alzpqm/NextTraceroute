@@ -45,8 +45,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "com.surfaceocean.nexttraceroute"
         minSdk = 26
         targetSdk = 37
-        versionCode = 23
-        versionName = "0.2.5"
+        versionCode = 24
+        versionName = "0.2.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

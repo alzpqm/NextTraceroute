@@ -55,6 +55,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -113,6 +114,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1188,68 +1190,27 @@ fun MainColumn(
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                         for ((gridDataIndex, gridDataItem) in gridDataListItem.withIndex()) {
-                            val arrangementForOneColumn =
-                                if (gridDataItem.size == 1) {
-                                    Arrangement.Center
-                                } else {
-                                    Arrangement.SpaceBetween
-                                }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = arrangementForOneColumn,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                for ((colIndex, item) in gridDataItem.withIndex()) {
-                                    val colorForSpecialUse = when {
-                                        gridDataIndex == 0 && colIndex == 0 -> resultSNColor.value
-                                        gridDataIndex == 0 && (colIndex == 2 || colIndex == 3) -> resultASColor.value
-                                        gridDataIndex == 2 && colIndex == 1 -> resultPingColor.value
-                                        else -> genericTextColor.value
-                                    }
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier
-                                            .padding(vertical = 4.dp, horizontal = 6.dp)
-                                            .pointerInput(item) {
-                                                detectTapGestures(
-                                                    onLongPress = {
-                                                        clipboardManager.setPrimaryClip(
-                                                            ClipData.newPlainText(
-                                                                "simple text",
-                                                                item.value
-                                                            )
-                                                        )
-                                                        Toast.makeText(
-                                                            context,
-                                                            resources.getString(R.string.copied),
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
-                                                    },
-                                                    onTap = {
-                                                        if (item.value != "*" && item.value != "") {
-                                                            if (!(gridDataIndex == 0 && colIndex == 0) && !(gridDataIndex == 2 && colIndex == 1)) {
-                                                                val tapURL =
-                                                                    "https://bgp.tools/search?q=" + item.value
-                                                                context.tryStartActivity(
-                                                                    Intent(
-                                                                        Intent.ACTION_VIEW,
-                                                                        tapURL.toUri()
-                                                                    )
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                )
-                                            }
+                            TraceResultRow(
+                                rowIndex = gridDataIndex,
+                                items = gridDataItem.map { it.value },
+                                textColor = genericTextColor.value,
+                                numberColor = resultSNColor.value,
+                                asColor = resultASColor.value,
+                                pingColor = resultPingColor.value,
+                                onLongPress = { value ->
+                                    clipboardManager.setPrimaryClip(ClipData.newPlainText("simple text", value))
+                                    Toast.makeText(context, resources.getString(R.string.copied), Toast.LENGTH_SHORT).show()
+                                },
+                                onTap = { colIndex, value ->
+                                    if (value != "*" && value.isNotEmpty() &&
+                                        !(gridDataIndex == 0 && colIndex == 0) &&
+                                        !(gridDataIndex == 2 && colIndex == 1)
                                     ) {
-                                        Text(
-                                            text = item.value,
-                                            style = TextStyle(color = colorForSpecialUse)
-                                        )
+                                        val tapURL = "https://bgp.tools/search?q=" + value
+                                        context.tryStartActivity(Intent(Intent.ACTION_VIEW, tapURL.toUri()))
                                     }
                                 }
-
-                            }
+                            )
                         }
                     }
                 }
@@ -1264,6 +1225,48 @@ fun MainColumn(
 
 }
 
+
+@Composable
+internal fun TraceResultRow(
+    rowIndex: Int,
+    items: List<String>,
+    textColor: Color,
+    numberColor: Color,
+    asColor: Color,
+    pingColor: Color,
+    onLongPress: (String) -> Unit,
+    onTap: (Int, String) -> Unit
+) {
+    val currentOnLongPress by rememberUpdatedState(onLongPress)
+    val currentOnTap by rememberUpdatedState(onTap)
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = if (items.size == 1) Arrangement.Center else Arrangement.SpaceBetween,
+        itemVerticalAlignment = Alignment.CenterVertically
+    ) {
+        items.forEachIndexed { colIndex, value ->
+            val color = when {
+                rowIndex == 0 && colIndex == 0 -> numberColor
+                rowIndex == 0 && (colIndex == 2 || colIndex == 3) -> asColor
+                rowIndex == 2 && colIndex == 1 -> pingColor
+                else -> textColor
+            }
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .padding(vertical = 4.dp, horizontal = 6.dp)
+                    .pointerInput(value, colIndex) {
+                        detectTapGestures(
+                            onLongPress = { currentOnLongPress(value) },
+                            onTap = { currentOnTap(colIndex, value) }
+                        )
+                    }
+            ) {
+                Text(text = value, style = TextStyle(color = color))
+            }
+        }
+    }
+}
 
 @Composable
 fun StatusCard(
