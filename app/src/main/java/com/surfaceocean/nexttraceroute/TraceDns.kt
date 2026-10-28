@@ -6,9 +6,13 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.xbill.DNS.AAAARecord
 import org.xbill.DNS.ARecord
@@ -24,11 +28,39 @@ import org.xbill.DNS.Type
 import org.xbill.DNS.PTRRecord
 import org.xbill.DNS.ReverseMap
 import java.net.InetAddress
+import java.io.IOException
 import java.time.Duration
 import java.util.Base64
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 private val dnsHttpClient = OkHttpClient.Builder().callTimeout(4, TimeUnit.SECONDS).build()
+
+/** RFC 8484 limits an application/dns-message body to 65,535 bytes. */
+internal suspend fun Call.awaitDnsMessage(): Message = suspendCancellableCoroutine { continuation ->
+    continuation.invokeOnCancellation { cancel() }
+    enqueue(object : Callback {
+        override fun onFailure(call: Call, e: IOException) {
+            if (continuation.isActive) continuation.resumeWithException(e)
+        }
+
+        override fun onResponse(call: Call, response: Response) {
+            try {
+                val message = response.use {
+                    if (!it.isSuccessful) throw IOException("DNS service returned HTTP ${it.code}")
+                    val source = it.body.source()
+                    source.request(65_536)
+                    if (source.buffer.size > 65_535) throw IOException("DNS response is too large")
+                    Message(source.readByteArray())
+                }
+                if (continuation.isActive) continuation.resume(message)
+            } catch (error: Exception) {
+                if (continuation.isActive) continuation.resumeWithException(error)
+            }
+        }
+    })
+}
 
 /** A/AAAA queries return immutable results; Compose state is updated once on Main. */
 suspend fun resolveTraceAddresses(
@@ -48,10 +80,7 @@ suspend fun resolveTraceAddresses(
                         val wire = Base64.getUrlEncoder().withoutPadding().encodeToString(query.toWire())
                         val url = dohUrl.toHttpUrl().newBuilder().addQueryParameter("dns", wire).build()
                         dnsHttpClient.newCall(Request.Builder().url(url)
-                            .header("Accept", "application/dns-message").build()).execute().use {
-                            check(it.isSuccessful) { "DNS service returned HTTP ${it.code}" }
-                            Message(it.body.bytes())
-                        }
+                            .header("Accept", "application/dns-message").build()).awaitDnsMessage()
                     } else {
                         SimpleResolver(server).apply {
                             tcp = mode == "tcp"
@@ -71,10 +100,10 @@ suspend fun resolveTraceAddresses(
 }
 
 /** Follow aliases with a fixed bound and cycle detection, including CNAME-only DoH answers. */
-internal fun resolveAddressRecords(
+internal suspend fun resolveAddressRecords(
     host: String,
     type: Int,
-    query: (Name, Int) -> List<Record>
+    query: suspend (Name, Int) -> List<Record>
 ): List<String> {
     var name = Name.fromString(host.removeSuffix(".") + ".")
     val visited = mutableSetOf<Name>()
@@ -112,10 +141,7 @@ internal suspend fun resolveTraceHostname(ip: String, mode: String, server: Stri
                 val url = dohUrl.toHttpUrl().newBuilder().addQueryParameter("dns", wire).build()
                 dnsHttpClient
                     .newCall(Request.Builder().url(url).header("Accept", "application/dns-message").build())
-                    .execute().use {
-                        check(it.isSuccessful)
-                        Message(it.body.bytes())
-                    }
+                    .awaitDnsMessage()
             } else {
                 SimpleResolver(server).apply {
                     tcp = mode == "tcp"

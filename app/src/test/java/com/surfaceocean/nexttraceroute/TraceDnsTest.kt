@@ -1,5 +1,6 @@
 package com.surfaceocean.nexttraceroute
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.xbill.DNS.ARecord
@@ -10,7 +11,7 @@ import org.xbill.DNS.Type
 import java.net.InetAddress
 
 class TraceDnsTest {
-    @Test fun followsCnameOnlyResponsesAndDeduplicatesAddresses() {
+    @Test fun followsCnameOnlyResponsesAndDeduplicatesAddresses() = runBlocking {
         val target = Name.fromString("example.com.")
         val alias = Name.fromString("cdn.example.com.")
         val record = ARecord(alias, DClass.IN, 60, InetAddress.getByName("192.0.2.1"))
@@ -20,7 +21,7 @@ class TraceDnsTest {
         assertEquals(listOf("192.0.2.1"), result)
     }
 
-    @Test fun acceptsCnameAndAddressInSameResponse() {
+    @Test fun acceptsCnameAndAddressInSameResponse() = runBlocking {
         val target = Name.fromString("example.com.")
         val alias = Name.fromString("cdn.example.com.")
         assertEquals(listOf("192.0.2.2"), resolveAddressRecords("example.com", Type.A) { _, _ ->
@@ -29,7 +30,7 @@ class TraceDnsTest {
         })
     }
 
-    @Test fun cnameCycleTerminates() {
+    @Test fun cnameCycleTerminates() = runBlocking {
         val target = Name.fromString("example.com.")
         val alias = Name.fromString("cdn.example.com.")
         var calls = 0
@@ -40,7 +41,7 @@ class TraceDnsTest {
         assertEquals(2, calls)
     }
 
-    @Test fun unrelatedAnswerIsNotShownAsTarget() {
+    @Test fun unrelatedAnswerIsNotShownAsTarget() = runBlocking {
         assertEquals(emptyList<String>(), resolveAddressRecords("example.com", Type.A) { _, _ ->
             listOf(ARecord(Name.fromString("other.example.com."), DClass.IN, 60, InetAddress.getByName("192.0.2.3")))
         })

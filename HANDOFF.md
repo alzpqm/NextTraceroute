@@ -25,7 +25,7 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行正式版：`versionName = 0.2.4`、`versionCode = 22`
+- 現行正式版：`versionName = 0.2.4`、`versionCode = 22`；原始碼正在準備 0.2.5／23。
 - 後續公開版本必須高於 0.2.4，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
@@ -48,7 +48,36 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-10-05，0.2.4 已完成發佈）
+## 目前工作（2026-10-29，0.2.5 正式發佈準備）
+
+- 使用者確認修復後應直接發佈；本輪已取得 GitHub 正式發佈要求。0.2.5／versionCode 23 準備沿用原有憑證，完成來源、簽署產物、作者／tag、版本說明與遠端雜湊檢查後發佈。
+- 沿用已完成的 28 項 JVM 測試、API 37 模擬器 13 項，以及 OnePlus 實機分組 13 項與 3 項模擬 Call 測試；不將未完成的實機 socket 測試或 ADB 完整輸出冒稱成功。
+- 保留原有 `scripts/privacy-scan.sh` 的 mode-only 變更，不納入提交；不操作先前誤選且使用者要求保留測試套件的另一支手機。正式版發佈結果與產物雜湊完成後追加。
+
+### 前輪實機回歸（2026-10-29）
+
+- 使用者連接測試手機後，先誤選了另一支已授權裝置，並在該裝置安裝 Debug App 與 androidTest 套件；發現後立即停止測試。使用者明確選擇保留這兩個套件，後續不要擅自移除。該裝置曾出現部分測試失敗，因測試被中止且裝置選錯，不可視為完整回歸或據此判定 App 缺陷；正式版未安裝或移除。
+- 已依使用者確認，以裝置型號及 Android 版本核對指定 OnePlus，透過單一明確 transport 執行測試。USB 曾中斷且 ADB 輸出串流提前結束，原因未確定；不推測使用者是否操作手機。
+- 在 OnePlus Android 14／API 34／4 KB 上，新增 3 項 `DohDeviceRegressionTest`，以假 Call 驗證實際 Android 執行環境中正常 DNS 回應、65,536 bytes 超限拒絕與協程取消時呼叫 Call.cancel；3 項取得 `OK (3 tests)`。本機 JVM 原有受控 socket 測試另驗證兩條實際 HTTP 連線會在取消時關閉；本輪裝置端假 Call 測試不等同實機網路 socket 測試。
+- 既有 13 項 UI／追蹤回歸分組執行：12 項與語言切換 1 項的裝置端 TestRunner 記錄各為 0 失敗、0 忽略。因 ADB shell 串流提前中斷，沒有取得一份完整的 `OK (13 tests)` 結尾；上述結果依裝置端測試記錄，不能稱為單次完整 instrumentation 輸出。
+- 測試中斷曾留下 Debug 專用設定 fixture 標記；已依原本不存在的標記還原，最後 Debug files 僅見 `profileInstalled`。OnePlus 正式版 0.2.4／versionCode 22 保留，未清除正式資料。修復仍只在本機，未提交、推送或發佈。
+
+### 前輪工作（2026-10-27，DoH 修復與回歸）
+
+- 依使用者要求檢查、修復與更新；本輪修復保留在本機工作目錄，未發布新版本。現有 0.2.4 是 GitHub 已發佈的版本，未更改正式 App 或其資料。
+- DoH 查詢原先使用同步 `execute()` 與無上限 `body.bytes()`。本機受控伺服器在修復前重現：取消時仍等待網路逾時，超大串流無法及時拒絕；正常 DNS 回應的對照測試通過。
+- DoH 改為可取消的非同步呼叫，取消時關閉 Call；A／AAAA 及 PTR 回應依 RFC 8484 限制於 65,535 bytes，超限即關閉並回報解析失敗。既有 A／AAAA、CNAME 與 PTR 行為保留。
+- 三方獨立覆核中，Gemini 與 Claude 有成功回執；DeepSeek 達輸出上限而未正常完成，未當作成功意見。採納的 DoH 問題經受控測試證實；其餘未證實推論未當成已確認缺陷。模型回執、usage 與採納／拒絕理由保存在既有私人接手紀錄及私有 evidence。
+- 應用程式與測試已完成本機驗證，沒有要求簽署或新建 GitHub Release。原有 `scripts/privacy-scan.sh` 僅 mode 變更予以保留；前次未提交的接手內容保留為以下歷史紀錄。
+
+### 前次共享工具紀錄（2026-10-14；狀態已由私人交接的較新紀錄取代）
+
+- 已讀取共享技能 `gemini-collaboration`。依共享通知，官方 `@google/gemini-cli` 0.63.0 已完成安裝、版本／help 與原生憑證依賴檢查；共享技能內的 `scripts/consult-gemini.ps1` 可供後續獨立文字審閱使用，內建工具清單為空，不授予整個專案的存取權。
+- 設定模型為 `gemini-4-argon`、HIGH thinking；通知時尚未登入或設定 API 金鑰，非敏感 smoke test 回報 authentication required（code 41）。這不是成功的推理驗證，模型存取能力仍待確認；使用前須檢查實際退出狀態及回應中的 model usage，不可默默替換模型。
+- 後續只提供必要、去識別的程式摘錄與證據，不傳送私人接手檔、帳號資料、正式環境位址、未遮罩日誌或任何憑證。Gemini 建議須由本專案自行驗證，不擴大修改或發佈授權。
+- 本輪僅更新本機接手紀錄，未安裝、登入、呼叫模型、重跑測試、提交或推送；0.2.4 發佈狀態不變。
+
+### 前輪完成事項（2026-10-05，0.2.4 已完成發佈）
 
 - 使用者已明確要求修正、測試及發佈 GitHub，並要求發佈前隱私與語言檢查；本輪發佈授權已取得，不需沿用前輪未授權的結論。
 - 已修正三項實機確認的問題：異常數值造成設定頁崩潰、後端不可用時遺失本地分類、查詢期間才出現的跳點缺少 metadata。新增地圖請求取消、10 秒整體逾時與 8 KiB 回應上限。
@@ -92,6 +121,15 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-10-29：`assembleDebugAndroidTest lintDebug` 成功；新增 3 項 DoH 裝置測試取得 `OK (3 tests)`，另以 TestRunner 完成紀錄確認既有 12 項加 1 項各為 0 failed／0 ignored。模擬 Call 的取消測試只確認 Android 端取消連動；先前 JVM socket 測試的網路連線關閉結果不可冒稱已在實機重現。
+- 2026-10-29：曾誤選另一支手機並安裝 Debug 與測試套件，已停止測試，依使用者要求保留套件；改以明確確認的 OnePlus 執行。沒有更動任何正式版、未清除正式資料、未發佈 GitHub。
+
+- 2026-10-27：修復前受控測試的正常 DoH 查詢通過，但取消與超大回應兩項斷言失敗；修復後 28 項 JVM 測試通過，包含正常 A／PTR 回應、超過 65,535 bytes 的持續串流及取消後兩條底層連線均關閉。JVM 測試 runtime 排除 Android 專用 SLF4J adapter，以免 Android Log stub 干擾測試；不影響 App 執行時依賴。
+- 2026-10-27：單一 Gradle 建置 `testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` 成功，lint 為 0 errors、13 個依賴更新／既有配置 warnings；測試改善後再執行全部 JVM 測試成功。API 37／x86_64／16 KB 模擬器取得 `OK (13 tests)`，包含長網址、三項既有問題、停止／重跑、設定及語言切換。本輪沒有連接的實體手機，未驗證新的實機結果。
+- 2026-10-27：GitHub Fork 查無開啟中的 issue；latest 仍為 0.2.4。未進行正式簽署、部署、提交、push、tag 或 Release，本輪結果不構成新版本的完整發佈隱私驗證。
+
+- 2026-10-14：完整讀取共享 Gemini 技能與本接手檔，只補記工具資訊及待登入狀態；CLI／模型狀態引自共享通知，本專案未另行執行檢查或推理。文件差異及空白檢查通過，新增內容不含本機絕對路徑、帳號或憑證；既有 `scripts/privacy-scan.sh` 變更保留未動。
 
 - 2026-10-05，0.2.4 發佈收尾：GitHub Actions run `37180588454` 在 `9c93928` 成功完成正式建置、測試、lint、Bash 來源／產物隱私掃描及暫存上傳。最終程式碼在 Android 14 實機、API 37 模擬器各再次取得 `OK (13 tests)`。
 - 2026-10-05：APK 的 153 個、AAB 的 162 個非空 ZIP entries 均在本機再次逐項掃描，包括 UTF-8／UTF-16、本機身分與路徑、裝置識別資料、私人 email、token 及私鑰樣式，無阻擋項目。公開來源、發佈文字、匿名 commit／tag、Release 作者及資產上傳者均已核對；GitHub Secret Scanning 為 0 open alerts。

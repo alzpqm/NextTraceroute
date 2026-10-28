@@ -45,8 +45,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "com.surfaceocean.nexttraceroute"
         minSdk = 26
         targetSdk = 37
-        versionCode = 22
-        versionName = "0.2.4"
+        versionCode = 23
+        versionName = "0.2.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -100,6 +100,11 @@ extensions.configure<ApplicationExtension> {
 //            version = "3.22.1"
 //        }
 //    }
+}
+
+// JVM tests use SLF4J's no-op fallback instead of the Android-only Log adapter.
+configurations.matching { it.name.endsWith("UnitTestRuntimeClasspath") }.configureEach {
+    exclude(group = "org.slf4j", module = "slf4j-android")
 }
 
 dependencies {
