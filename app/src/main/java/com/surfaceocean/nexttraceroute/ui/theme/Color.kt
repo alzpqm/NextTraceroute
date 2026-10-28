@@ -28,7 +28,6 @@ The "square/okhttp" library is licensed under the Apache 2.0 License.
 The "gson" library is licensed under the Apache 2.0 License.
 The "slf4j-android" library is licensed under the MIT License.
 The "androidx" library is licensed under the Apache 2.0 License.
-The "Compose Color Picker" library is licensed under the MIT License.
 
 */
 package com.surfaceocean.nexttraceroute.ui.theme

@@ -1,0 +1,1 @@
+Fix settings crashes and missing hop information. Add Chinese and British English interface options.

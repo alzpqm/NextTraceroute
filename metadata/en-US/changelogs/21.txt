@@ -1,0 +1,1 @@
+Improve long URL input, DNS handling and stopping or restarting a trace.

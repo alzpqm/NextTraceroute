@@ -48,7 +48,15 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-10-29，0.2.5 已正式發佈）
+## 目前工作（2026-10-29，GitHub 過期內容清理）
+
+- 使用者要求精簡 GitHub 過期內容，並明確選擇保留全部歷史 Release、APK／AAB 與版本標籤。預設分支與開發分支仍供目前維護及手動簽署流程使用，均保留。
+- 已更新過時的商店英文描述，補上 versionCode 21、22、23 的英文更新摘要；保留既有歷史 changelog。以現行中文首頁及英文設定頁取代兩張舊截圖，移除另外兩張舊截圖及過時宣傳圖；舊圖可從 Git 歷史還原。未更動 LICENSE、圖示或任何 Release assets。
+- 刪除只有註解與空類別的 `socketDatagramHandler.kt`，移除四份來源檔對已移除之選色器依賴的過期描述；其餘版權與授權文字保留。刪除的空檔可從 Git 歷史還原。
+- 使用者明確同意刪除 3 筆 2026-09-06 的 GitHub Actions 失敗紀錄：`34016233698`、`34016280607` 為 Android 37 SDK 安裝失敗，`34016346058` 為簽署準備失敗；三者均無 artifact。刪除後無法從 GitHub 還原，成功及已取消的紀錄保留。
+- Gemini、Claude、DeepSeek 已各完成一次匿名化文字覆核；採納／拒絕理由與 usage 記於既有私人接手檔。現行正式版仍為 0.2.5，本輪不建立新 Release。
+
+### 前輪發佈（2026-10-29，0.2.5 已正式發佈）
 
 - 使用者確認修復後應直接發佈。0.2.5／versionCode 23 已正式發佈並設為 latest；沿用原有憑證，來源、簽署產物、作者／tag、版本說明與遠端雜湊均已核對。
 - 沿用已完成的 28 項 JVM 測試、API 37 模擬器 13 項，以及 OnePlus 實機分組 13 項與 3 項模擬 Call 測試；不將未完成的實機 socket 測試或 ADB 完整輸出冒稱成功。
@@ -121,6 +129,11 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-10-29：清理前確認兩個分支均在同一提交，但開發分支仍為既有維護流程使用；無 Actions cache。原有 7 個 Release 及其所有 assets、標籤保留；簽署建置的暫存 artifact 尚未到期並交由既有保留策略處理。
+- 2026-10-29：清理前確認空程式檔沒有任何實際程式引用，過時圖片路徑未被專案文件直接引用；替換截圖取自 API 37 模擬器，已視覺核對無個人資料。`LICENSE` 與原有歷史 changelog 未修改，版本更新摘要與 0.2.3～0.2.5 版本說明相符。
+- 2026-10-29：清理後 `testDebugUnitTest lintDebug assembleDebug` 成功，28 項 JVM 測試通過，沒有 lint errors。移除的 3 筆 Actions runs 刪除前均為 completed／failure，沒有 artifact；GitHub 上的紀錄不可復原。
+- 2026-10-29：來源及匿名維護者提交身分的隱私檢查通過；兩張新截圖無 EXIF／文字中繼資料，GitHub Secret Scanning 為 0 open alerts。確認被移除的素材和空檔仍可由 Git 歷史還原；原有 `scripts/privacy-scan.sh` mode-only 變更未納入本輪提交。
 
 - 2026-10-29，0.2.5 發佈：最後本機建置及 28 項 JVM 測試通過，lint 0 errors、13 個既有依賴更新／配置 warnings。GitHub Actions run `40727829460` 在 release commit `c97ff50` 完成測試、lint、正式 APK／AAB 建置、來源及產物隱私掃描。
 - 2026-10-29：本機再次掃描 APK 的 153 個與 AAB 的 162 個非空 entries，以及來源、待推送提交、tag、版本說明與匿名作者資料，無隱私阻擋項目；GitHub Secret Scanning 為 0 open alerts。APK／AAB 憑證為 `CN=alzpqm, O=alzpqm`，SHA-256 `b31af4586d6222c20bfaf0af6b6359023818714ddf57b022fdea67e115d223a9`，與先前正式版相同。

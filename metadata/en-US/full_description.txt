@@ -1,1 +1,5 @@
-NextTraceroute is a root-free route tracing application that defaults to using the NextTrace API. Enter target address (IPv4, IPv6, Hostname and URL), press run, and enjoy!
+NextTraceroute is an Android traceroute app that does not require root access. Enter a domain, IP address or URL to inspect route hops, latency, network and location information.
+
+The app supports IPv4 and IPv6, local trace history, route maps, UDP/TCP DNS and DNS over HTTPS. The interface defaults to Traditional Chinese, with British English available in Settings.
+
+NextTrace and DNS services are operated by third parties and receive the information needed to process your queries. Android 8.0 or later is required.
