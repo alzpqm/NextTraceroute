@@ -9,7 +9,7 @@
 - 上游：`origin` → `https://github.com/nxtrace/NextTraceroute.git`
 - 維護 Fork：`fork` → `https://github.com/alzpqm/NextTraceroute.git`
 - 目前開發分支：`codex/nexttrace-1.7.2-ui`
-- 目前穩定版：`v0.2.6`，release commit `96cfb27`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.2.6`。
+- 目前穩定版：`v0.3.0`，release commit `556550f`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.3.0`。
 - 發佈與提交只能使用 GitHub 帳號名稱，以及 GitHub 提供的 noreply email；不可出現真名或真實 email。
 - 每次 push、tag 或 GitHub Release 前都必須完成隱私掃描。發現本機使用者名稱、絕對路徑、裝置序號、PIN、Token、密碼、私鑰、keystore、真實姓名或真實 email 時禁止發佈。
 - 隱私掃描必須涵蓋工作樹、待推送 commits、tag/commit 作者資料、APK/AAB 簽章憑證與 Release 中繼資料；掃描結果須更新在本檔。
@@ -25,20 +25,20 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行正式版：`versionName = 0.2.6`、`versionCode = 24`。
-- 後續公開版本必須高於 0.2.6，不可重複既有版本號或造成比原版更舊的觀感。
+- 現行正式版：`versionName = 0.3.0`、`versionCode = 25`。
+- 後續公開版本必須高於 0.3.0，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
 ## NextTrace 後端
 
 - App 的核心相容性標示及 User-Agent 版本為 `1.7.2`；API 協定版本另計，不代表載入官方核心程式。
-- 使用 legacy v3 WebSocket / PoW API 流程；預設不需要使用者 API token。
-- 2026-11-08 查核：官方核心穩定版 v1.7.6 支援可選 v4 HTTP GeoIP；無 v4 token 時仍選 v3。本 App 0.2.6 尚未實作 v4，詳見 `docs/API_AUDIT_2026-11-08.md`。
-- 不應重新加入會誤導一般使用者的 API token 設定，除非未來後端協定明確要求。
+- 無 v4 授權時使用 legacy v3 WebSocket / PoW；0.3.0 新增可選 v4 HTTP GeoIP，授權僅送至固定官方來源。已設定但失效、損壞、到期或額度耗盡時不靜默降級。
+- 2026-11-08 查核：官方核心穩定版 v1.7.6 同樣保留無 v4 token 時選 v3；0.2.6 的整合前狀態及上游政策詳見 `docs/API_AUDIT_2026-11-08.md`，本次實作見 `docs/releases/v0.3.0.md`。
+- v4 授權從官網驗證後自動匯入；人機驗證須由使用者完成，不自動繞過、反覆領取或續期。不得顯示、記錄或複製 token 到電腦、Intent 或一般設定檔。
 
 ## 測試環境
 
-- API 37 模擬器：`NextTraceroute_API_37`，ARM64、16K page size。
+- API 37 模擬器：`NextTraceroute_API_37`，依主機平台為 ARM64 或 x86_64，16K page size；本輪使用 x86_64。
 - Android 14 實機可透過 `adb devices` 在本機辨識；裝置序號與解鎖資訊是敏感資料，不得記錄在此檔或任何提交中。
 - Debug application ID：`com.surfaceocean.nexttraceroute.debug`，可與正式版並存。
 - macOS 命令列可能預設到 Java 8；建置時必須使用 Android Studio 內建 JBR 21，並設定 `ANDROID_HOME` 或 `ANDROID_SDK_ROOT`。不可把實際本機路徑寫進 repository。
@@ -49,16 +49,18 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-11-08，0.3.0 API v4 升級進行中）
+## 目前工作（2026-11-08，0.3.0 API v4 已正式發布）
 
-- 使用者要求升級並自動取得 v4 授權。已實作 0.3.0／versionCode 25 開發版：固定官方 HTTP v4 查詢、官網 WebView 授權畫面、驗證後自動匯入、AndroidKeyStore 加密及 noBackupFilesDir 保存。
+- 使用者要求升級並自動取得 v4 授權。0.3.0／versionCode 25 已正式發布為 latest：固定官方 HTTP v4 查詢、官網 WebView 授權畫面、驗證後自動匯入、AndroidKeyStore 加密及 noBackupFilesDir 保存。
 - 官方公開領取頁需要 Turnstile 人機驗證；本 App 不繞過或自動操作驗證，不做背景反覆領取或自動續期。授權頁成功後讀取官網 localStorage record，再由官方 status endpoint 驗證後保存；此流程仍需使用者完成官網驗證及確認。
 - 無授權才使用 v3；已設定但失效、到期、解密失敗或 429 時不靜默切回 v3。v4 不初始化 v3 PoW／WebSocket；401／429 明確提示，其餘遠端查詢當輪失敗後停止繼續請求。保留本地位址分類及獨立地圖路徑。
 - WebView 僅允許官方來源與 Cloudflare 驗證資源、不開 JavaScript bridge、禁用檔案／內容存取、禁止截圖、退出清除網頁暫存；WebView 資料也排除備份與移轉。隱私政策及中英文介面已同步更新。
 - 本機 37 項 JVM 測試及 lint／Debug APK／androidTest APK 建置已通過。API 37／16 KB 模擬器 22 項回歸通過，最後加入授權畫面常亮旗標後再跑 2 項授權測試亦通過。
 - 本輪已依型號核對指定 OnePlus Android 14；首次 22 項有 1 項語言測試因鎖定畫面未取得 Compose hierarchy，其餘 21 項通過。使用者解鎖後，語言及授權 3 項補測取得 OK (3 tests)；不可將首次整套結果稱為全通過。未操作另一支手機。
 - 新增 opt-in `V4LiveAuthorizationTest`，只有 instrumentation 參數 `v4Live=true` 才驗證使用者實際取得的授權及一次公開 DNS 位址查詢；使用者已在指定 OnePlus 完成官網驗證並確認自動返回設定、顯示 v4 已啟用；隨後取得 OK (1 test)，驗證實際授權狀態及一次 GeoIP 查詢。token 未輸出、未複製至電腦或寫入專案。
-- 正式版仍為 0.2.6；本輪準備推送及簽署，發布前仍須驗證來源、作者、產物及 Release；尚未發布。原有 `scripts/privacy-scan.sh` mode-only 變更保留；前輪 API 檢查文件／接手變更保留並將一併整理。
+- release tag 指向已簽署來源 `556550f`，GitHub Actions run `42396210113` 成功；APK、AAB、SHA256SUMS 及版本說明、匿名作者／tag、憑證與遠端 digest 均已核對。全部歷史 Release、資產及標籤保留。
+- 正式包在 API 37／16 KB 模擬器由 0.2.6 覆蓋升級，首次開啟前設定與歷史資料庫雜湊一致；冷啟動成功，目前程序無 AndroidRuntime fatal。OnePlus 正式版未升級或清除；實際授權保存在 Debug 套件的獨立加密儲存區，正式版須自行完成官網驗證。
+- 原有 `scripts/privacy-scan.sh` mode-only 變更保留，未納入提交；前輪 API 檢查文件／接手內容已保留。模型協作限制、成功及失敗回執、usage 與採納理由存於既有私人接手檔。
 
 ### 前輪工作（2026-11-08，API v4 檢查）
 
@@ -156,6 +158,11 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-11-08，0.3.0 發布：GitHub Actions run `42396210113` 在 `556550f` 完成 JVM 測試、lint、正式 APK／AAB、來源及產物隱私掃描。發布前本機再逐項掃描 APK 153 個及 AAB 162 個非空 entries 的 ASCII／UTF-16LE，無私人路徑、身分、私人 email、私鑰或 token 樣式；來源 88 份可公開文字檔、匿名 commit／tag、Release 作者及上傳者通過，Secret Scanning 為 0 open alerts。
+- 2026-11-08：APK／AAB 驗章成功，憑證為 `CN=alzpqm, O=alzpqm`，SHA-256 `b31af4586d6222c20bfaf0af6b6359023818714ddf57b022fdea67e115d223a9`，與既有正式版相同。package、0.3.0／code 25、minSdk 26、targetSdk 37 與 16 KB zipalign 通過。AAB 保留自簽、無 timestamp 及串流 manifest 順序等既有提示；未驗證 Google Play 上傳。本機驗章腳本最初因 Java 參數未加引號而失敗，修正後實際驗章通過，非產物簽章失效。
+- 2026-11-08：模擬器正式版 0.2.6 → 0.3.0 升級前後、首次開啟前，設定與歷史資料庫 SHA-256 相同；冷啟動正常且當次 PID 無 AndroidRuntime fatal。未宣稱實體手機正式包升級或所有裝置相容性已驗證。
+- 2026-11-08：APK SHA-256 `e32424af73eb9b1d9f4b70887254a22f84aade436e2ef37ccf59c1ad90b1c30c`；AAB `08faa4377bb35ed18a68c095905a8c99d3a672ef89c0fb39a4226b4ed4c6dffc`；SHA256SUMS 檔 `429d20c8d1180af0a0aaa9af013ea50c08e6586b684dd870a35f043830d91bba`。草稿及發布後三個 GitHub assets digest 均與本機相同，版本說明一致，Release 非 draft／prerelease 且為 latest，tag 指向 `556550f`。
 
 - 2026-11-08，0.3.0 準備：本機 testDebugUnitTest／lintDebug／assembleDebug／assembleDebugAndroidTest 通過，37 項 JVM 測試、lint 0 errors、13 項既有 warnings。涵蓋固定標頭與 GET、401／429、跨來源重新導向拒絕、回應上限、socket 取消、授權格式及來源驗證。
 - 2026-11-08：API 37／16 KB 模擬器取得 OK (22 tests)，最後加入授權畫面常亮旗標後 2 項安全測試再通過；OnePlus Android 14 初輪 21 項通過／1 項受鎖定影響失敗，使用者解鎖後語言與授權取得 OK (3 tests)。授權資料測試使用獨立測試檔案，確認 AES-GCM 密文及損壞狀態不默認使用 v3。
