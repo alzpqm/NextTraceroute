@@ -38,7 +38,7 @@
 
 ## 測試環境
 
-- API 37 模擬器：`NextTraceroute_API_37`，依主機平台為 ARM64 或 x86_64，16K page size；本輪使用 x86_64。
+- API 37 模擬器：本機以 `emulator -list-avds` 核對名稱；目前為 `NextTraceroute_Regression_API37`，x86_64、16K page size。早期 macOS 的 AVD 名稱不同，不可直接套用。
 - Android 14 實機可透過 `adb devices` 在本機辨識；裝置序號與解鎖資訊是敏感資料，不得記錄在此檔或任何提交中。
 - Debug application ID：`com.surfaceocean.nexttraceroute.debug`，可與正式版並存。
 - macOS 命令列可能預設到 Java 8；建置時必須使用 Android Studio 內建 JBR 21，並設定 `ANDROID_HOME` 或 `ANDROID_SDK_ROOT`。不可把實際本機路徑寫進 repository。
@@ -49,7 +49,15 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-11-08，0.3.0 API v4 已正式發布）
+## 目前工作（2026-11-08，0.3.1 結果地區語言修復）
+
+- 使用者提供同一畫面地區名稱中英文混用的截圖，要求修復並發布。已確認舊 `Default` 依裝置全域 Locale 判斷，可能與 App 中文／英文介面不同；另僅依欄位 suffix 拼接，無法處理後端缺譯名或值的語種與欄位不符。
+- 0.3.1／code 26 將 Default 改為「跟隨介面」，在每輪追蹤開始固定語言；v3／v4 共用雙語欄位選擇、ISO 國家譯名及具國家上下文的香港／澳門／新加坡別名。只改地區顯示，不改網域、主機、ASN、原始地圖 metadata、歷史資料或授權。
+- 無可確認譯名的地名保留來源值；不引入線上翻譯、不臆測未知地名。既有歷史保留當時結果，更新後須重新追蹤才產生新顯示。
+- 新增 JVM 語言回歸及 Android 實際結果列／長按複製測試；正在驗證與準備簽署，尚未發布 0.3.1。目前僅另一支實體手機可見，未對其操作；本輪以 API 37／16 KB 模擬器測試。
+- DeepSeek 完成一次匿名化文字覆核，採納欄位／國家上下文限制、單輪語言固定及技術識別資料不翻譯等建議；Gemini 目前無適用整合授權、Claude 舊模型已到期，未呼叫、未冒稱成功。回執、usage、採納及驗證結果存於既有私人接手檔。原有 `scripts/privacy-scan.sh` mode-only 變更保留、不納入提交。
+
+### 前輪工作（2026-11-08，0.3.0 API v4 已正式發布）
 
 - 使用者要求升級並自動取得 v4 授權。0.3.0／versionCode 25 已正式發布為 latest：固定官方 HTTP v4 查詢、官網 WebView 授權畫面、驗證後自動匯入、AndroidKeyStore 加密及 noBackupFilesDir 保存。
 - 官方公開領取頁需要 Turnstile 人機驗證；本 App 不繞過或自動操作驗證，不做背景反覆領取或自動續期。授權頁成功後讀取官網 localStorage record，再由官方 status endpoint 驗證後保存；此流程仍需使用者完成官網驗證及確認。

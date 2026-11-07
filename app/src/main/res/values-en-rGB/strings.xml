@@ -42,7 +42,7 @@
     <string name="action_delete">"Delete"</string>
     <string name="external_missing">"No app is available to open this link or share this result."</string>
     <string name="external_forbidden">"This action is not permitted on this device."</string>
-    <string name="language_system">"Follow system"</string>
+    <string name="language_system">"Follow display language"</string>
     <string name="language_chinese">"Chinese"</string>
     <string name="language_english">"English"</string>
     <string name="dns_server_invalid">"The UDP/TCP DNS server address is invalid."</string>
@@ -55,7 +55,7 @@
     <string name="settings_subtitle">"Language, probes and service settings"</string>
     <string name="action_save">"Save"</string>
     <string name="settings_general">"General"</string>
-    <string name="api_language">"API response language"</string>
+    <string name="api_language">"Location language"</string>
     <string name="show_map">"Show route map"</string>
     <string name="show_map_description">"Generate a TraceMap after tracing"</string>
     <string name="probe_settings">"Probe settings"</string>

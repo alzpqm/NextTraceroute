@@ -1,0 +1,1 @@
+Fix mixed Chinese and English location names in trace results. Location language now follows the app display language by default, with explicit Chinese and English choices. Keep technical identifiers and existing history unchanged.

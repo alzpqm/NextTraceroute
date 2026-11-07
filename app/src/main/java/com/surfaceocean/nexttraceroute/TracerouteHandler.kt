@@ -72,7 +72,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.math.BigInteger
 import java.net.InetAddress
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -308,6 +307,7 @@ class TracerouteHandler {
         val context = LocalContext.current
         val resources = LocalResources.current
         LaunchedEffect(Unit) {
+            val geoLanguage = resolveGeoLanguage(currentLanguage.value, resources.configuration.locales[0].toLanguageTag())
             scope.launch(Dispatchers.Main.immediate) {
                 val id = Random.nextInt(1, Int.MAX_VALUE)
                 threadMutex.withLock { tracerouteThreadsIntList.add(id) }
@@ -364,19 +364,14 @@ class TracerouteHandler {
                                 continue
                             }
                             val asNumber = data.get("asnumber").asString
-                            val chinese = currentLanguage.value == "zh" ||
-                                (currentLanguage.value == "Default" && Locale.getDefault().language.startsWith("zh"))
                             row[0][2].value = when {
                                 reserved.isNotEmpty() -> reserved
                                 asNumber.isNotBlank() -> "AS$asNumber"
                                 else -> "*"
                             }
                             row[0][3].value = data.get("whois").asString.ifBlank { "*" }
-                            val suffix = if (chinese) "" else "_en"
                             row[1][0].value = if (reserved.isNotEmpty()) reserved else
-                                listOf("country$suffix", "prov$suffix", "city$suffix", "domain")
-                                    .map { data.get(it).asString }.filter { it.isNotBlank() }
-                                    .joinToString(" ").ifBlank { "*" }
+                                formatGeoLocation(data, geoLanguage)
                             val geo = mutableMapOf<String, Any?>()
                             for (key in listOf("ip", "asnumber", "country", "country_en", "prov", "prov_en",
                                 "city", "city_en", "owner", "isp", "domain", "whois")) geo[key] = data.get(key).asString
@@ -389,7 +384,7 @@ class TracerouteHandler {
                             traceMapThreadsMapList.add(listOf(mutableMapOf<String, Any?>(
                                 "Success" to true, "Address" to mapOf("IP" to ip, "zone" to ""),
                                 "Hostname" to "", "TTL" to index + 1, "Error" to null,
-                                "Geo" to geo, "Lang" to (if (chinese) "cn" else "en"), "MPLS" to null
+                                "Geo" to geo, "Lang" to (if (geoLanguage == GeoLanguage.CHINESE) "cn" else "en"), "MPLS" to null
                             )))
                         }
                         // A hop can arrive while another lookup is suspended. Its IP alone
