@@ -9,7 +9,7 @@
 - 上游：`origin` → `https://github.com/nxtrace/NextTraceroute.git`
 - 維護 Fork：`fork` → `https://github.com/alzpqm/NextTraceroute.git`
 - 目前開發分支：`codex/nexttrace-1.7.2-ui`
-- 目前穩定版：`v0.3.0`，release commit `556550f`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.3.0`。
+- 目前穩定版：`v0.3.1`，release commit `7f7622c`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.3.1`。
 - 發佈與提交只能使用 GitHub 帳號名稱，以及 GitHub 提供的 noreply email；不可出現真名或真實 email。
 - 每次 push、tag 或 GitHub Release 前都必須完成隱私掃描。發現本機使用者名稱、絕對路徑、裝置序號、PIN、Token、密碼、私鑰、keystore、真實姓名或真實 email 時禁止發佈。
 - 隱私掃描必須涵蓋工作樹、待推送 commits、tag/commit 作者資料、APK/AAB 簽章憑證與 Release 中繼資料；掃描結果須更新在本檔。
@@ -25,8 +25,8 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行正式版：`versionName = 0.3.0`、`versionCode = 25`。
-- 後續公開版本必須高於 0.3.0，不可重複既有版本號或造成比原版更舊的觀感。
+- 現行正式版：`versionName = 0.3.1`、`versionCode = 26`。
+- 後續公開版本必須高於 0.3.1，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
 ## NextTrace 後端
@@ -49,12 +49,14 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-11-08，0.3.1 結果地區語言修復）
+## 目前工作（2026-11-08，0.3.1 結果地區語言修復已發布）
 
 - 使用者提供同一畫面地區名稱中英文混用的截圖，要求修復並發布。已確認舊 `Default` 依裝置全域 Locale 判斷，可能與 App 中文／英文介面不同；另僅依欄位 suffix 拼接，無法處理後端缺譯名或值的語種與欄位不符。
 - 0.3.1／code 26 將 Default 改為「跟隨介面」，在每輪追蹤開始固定語言；v3／v4 共用雙語欄位選擇、ISO 國家譯名及具國家上下文的香港／澳門／新加坡別名。只改地區顯示，不改網域、主機、ASN、原始地圖 metadata、歷史資料或授權。
 - 無可確認譯名的地名保留來源值；不引入線上翻譯、不臆測未知地名。既有歷史保留當時結果，更新後須重新追蹤才產生新顯示。
-- 新增 JVM 語言回歸及 Android 實際結果列／長按複製測試；正在驗證與準備簽署，尚未發布 0.3.1。目前僅另一支實體手機可見，未對其操作；本輪以 API 37／16 KB 模擬器測試。
+- 新增 7 項 JVM 語言回歸，全部 44 項 JVM 測試通過；lint 0 errors、13 項既有 warnings；Debug 與 androidTest APK 建置成功。API 37／16 KB 模擬器本輪完整取得 OK (22 tests)，包含新增的 2 項中文／英文結果列與長按複製測試。目前僅另一支實體手機可見，未對其操作，未宣稱本輪已完成實機驗證。
+- 0.3.1 已正式發布為 latest，release tag 指向 `7f7622c`；GitHub Actions run `42425584728` 完成測試、lint、正式簽署與隱私掃描。APK／AAB 與既有正式版憑證相同，正式版 0.3.0 → 0.3.1 升級及冷啟動通過，設定與歷史在升級後首次開啟前雜湊不變。
+- 來源 93 份可公開文字檔、匿名作者／tag、正式產物、版本說明、Release 作者及上傳者檢查通過，三個資產遠端 digest 均與本機相同；歷史 Release、APK／AAB 及標籤全部保留。實體手機的 App、資料與授權均未更動。
 - DeepSeek 完成一次匿名化文字覆核，採納欄位／國家上下文限制、單輪語言固定及技術識別資料不翻譯等建議；Gemini 目前無適用整合授權、Claude 舊模型已到期，未呼叫、未冒稱成功。回執、usage、採納及驗證結果存於既有私人接手檔。原有 `scripts/privacy-scan.sh` mode-only 變更保留、不納入提交。
 
 ### 前輪工作（2026-11-08，0.3.0 API v4 已正式發布）
@@ -166,6 +168,15 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-11-08，0.3.1 發布：GitHub Actions run `42425584728` 在 `7f7622c` 成功完成測試、lint、正式 APK／AAB 及來源／產物隱私掃描；本機再次逐項掃描 APK 153 個、AAB 162 個非空 ZIP entries 的 ASCII／UTF-16LE，未發現私人路徑、身分、私人 email、私鑰或 token 樣式。來源 93 份可公開文字檔與匿名 commit／tag 通過，Secret Scanning 為 0 open alerts。
+- 2026-11-08：APK／AAB 驗章通過，憑證 `CN=alzpqm, O=alzpqm`、SHA-256 `b31af4586d6222c20bfaf0af6b6359023818714ddf57b022fdea67e115d223a9` 與既有正式版一致；package、0.3.1／code 26、minSdk 26、targetSdk 37 及 16 KB zipalign 正確。AAB 保留自簽、無 timestamp 及串流 manifest 順序等既有提示，未驗證 Google Play 上傳。
+- 2026-11-08：API 37／16 KB 模擬器由正式 0.3.0 直接覆蓋升級至 0.3.1，首次開啟前既有設定與歷史資料庫 SHA-256 不變，冷啟動成功且目前 PID 無 AndroidRuntime fatal。此項不是實體手機正式包升級或實際 v4 連線測試；本次未重新領取授權。
+- 2026-11-08：APK SHA-256 `62457a17b089f3ce4671f7d54cb20c9ab60b4446c1e9c7c914979d14004893d6`；AAB `048ec1edc6426c1fc147e86893f75277c7debcd787db163fe060f18a356e1dd9`；SHA256SUMS 檔 `24d39d4fbb64fe5413ff41dd1d854c93902ee70f3c311ac70c913537c42fc23e`。草稿與發布後三個 GitHub assets digest 均相符，版本說明一致、作者／上傳者為匿名 GitHub 帳號，Release 非 draft／prerelease 且為 latest，tag 指向 `7f7622c`。
+
+- 2026-11-08，0.3.1：本機 testDebugUnitTest／lintDebug／assembleDebug／assembleDebugAndroidTest 成功，44 項 JVM、lint 0 errors／13 項既有 warnings。新增測試覆蓋截圖的三種地區混用、值放錯雙語欄位、ISO 國家譯名與代碼、別名的國家上下文限制、未知譯名保留、技術網域與原 JSON 不改，以及 Default 跟隨 App／明確選語言。
+- 2026-11-08：API 37／x86_64／16 KB 模擬器取得 OK (22 tests)，包含 2 項新增 GeoLocalizationDeviceTest，驗證 App 中文／系統英文及 App 英文／系統中文下的實際結果列與長按複製；未使用 API token 或真實路由資料。全套保留原有輸入、追蹤、設定、語言、DoH、版面與授權安全回歸。OnePlus 本輪未連接，未操作另一支手機。
+- 2026-11-08：簽署前來源 93 份可公開文字檔及匿名提交身分檢查通過，Secret Scanning 為 0 open alerts。上游 v1.7.6 [v4](https://github.com/nxtrace/NTrace-core/blob/v1.7.6/ipgeo/nexttrace_api_v4.go) 明確不使用 lang 參數、[v3](https://github.com/nxtrace/NTrace-core/blob/v1.7.6/ipgeo/nexttrace_api_v3.go) 亦未依 lang 翻譯；本次不新增未記載的 API 語言參數或額外線上翻譯呼叫。
 
 - 2026-11-08，0.3.0 發布：GitHub Actions run `42396210113` 在 `556550f` 完成 JVM 測試、lint、正式 APK／AAB、來源及產物隱私掃描。發布前本機再逐項掃描 APK 153 個及 AAB 162 個非空 entries 的 ASCII／UTF-16LE，無私人路徑、身分、私人 email、私鑰或 token 樣式；來源 88 份可公開文字檔、匿名 commit／tag、Release 作者及上傳者通過，Secret Scanning 為 0 open alerts。
 - 2026-11-08：APK／AAB 驗章成功，憑證為 `CN=alzpqm, O=alzpqm`，SHA-256 `b31af4586d6222c20bfaf0af6b6359023818714ddf57b022fdea67e115d223a9`，與既有正式版相同。package、0.3.0／code 25、minSdk 26、targetSdk 37 與 16 KB zipalign 通過。AAB 保留自簽、無 timestamp 及串流 manifest 順序等既有提示；未驗證 Google Play 上傳。本機驗章腳本最初因 Java 參數未加引號而失敗，修正後實際驗章通過，非產物簽章失效。
