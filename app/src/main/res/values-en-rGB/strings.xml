@@ -66,7 +66,7 @@
     <string name="dns_mode">"Query mode"</string>
     <string name="dns_server">"UDP/TCP DNS server"</string>
     <string name="advanced_services">"Advanced service settings"</string>
-    <string name="advanced_description">"These settings normally require no changes. NextTrace does not require you to supply an API token by default."</string>
+    <string name="advanced_description">"These host settings apply to v3. v4 authorisation is sent only to the official NextTrace service."</string>
     <string name="pow_host">"PoW hostname"</string>
     <string name="pow_dns">"PoW DNS name or IP"</string>
     <string name="api_host">"API hostname"</string>
@@ -76,5 +76,18 @@
     <string name="native_v4_unavailable">"IPv4 ping is unavailable on this device. IPv4 tracing may not complete."</string>
     <string name="native_v6_unavailable">"IPv6 ping is unavailable on this device. IPv6 tracing may not complete."</string>
     <string name="native_both_unavailable">"IPv4 and IPv6 ping are unavailable on this device. Route probing cannot run."</string>
-    <string name="about_text">"NextTraceroute %1$s\nAn Android traceroute app using the NextTrace API\nCompatible with NextTrace core/API v%2$s\n\nCopyright © 2024–2026 surfaceocean\nProject: https://github.com/alzpqm/NextTraceroute\nUpstream: https://github.com/nxtrace/NextTraceroute\n\nThis is free software, distributed under the GNU General Public License, version 3 or later. You may redistribute or modify it under those terms. It comes without any warranty, including the implied warranties of merchantability or fitness for a particular purpose. See the project LICENSE file and https://www.gnu.org/licenses/ for the full terms.\n\nThe default NextTrace API is operated by a third party. This project does not guarantee its availability, performance or data accuracy. You can customise the service addresses in Settings.\n\nLibraries and licences:\ndnsjava: BSD 3-Clause\nseancfoley/IPAddress, square/okhttp, gson, androidx: Apache 2.0\nslf4j-android: MIT\nSee the project LICENSE file for details."</string>
+    <string name="about_text">"NextTraceroute %1$s\nAn Android traceroute app using the NextTrace API\nProbe compatibility baseline v%2$s\nIP geolocation and route annotation data is provided by the official NextTrace API\nhttps://www.nxtrace.org/\n\nCopyright © 2024–2026 surfaceocean\nProject: https://github.com/alzpqm/NextTraceroute\nUpstream: https://github.com/nxtrace/NextTraceroute\n\nThis is free software, distributed under the GNU General Public License, version 3 or later. You may redistribute or modify it under those terms. It comes without any warranty, including the implied warranties of merchantability or fitness for a particular purpose. See the project LICENSE file and https://www.gnu.org/licenses/ for the full terms.\n\nThe default NextTrace API is operated by a third party. This project does not guarantee its availability, performance or data accuracy. You can customise the service addresses in Settings.\n\nLibraries and licences:\ndnsjava: BSD 3-Clause\nseancfoley/IPAddress, square/okhttp, gson, androidx: Apache 2.0\nslf4j-android: MIT\nSee the project LICENSE file for details."</string>
+    <string name="v4_authorization_title">"NextTrace v4 authorisation"</string>
+    <string name="v4_authorization_loading">"Loading authorisation…"</string>
+    <string name="v4_not_configured">"No v4 authorisation is configured; v3 is in use."</string>
+    <string name="v4_authorization_ready">"v4 is enabled."</string>
+    <string name="v4_authorization_expired">"v4 authorisation is invalid or expired. Obtain authorisation again in Settings."</string>
+    <string name="v4_quota_exhausted">"The v4 query quota is exhausted. Check the official authorisation page."</string>
+    <string name="v4_authorization_failed">"Unable to verify or save authorisation. Retry the import."</string>
+    <string name="v4_authorizing">"Verifying and securely saving authorisation…"</string>
+    <string name="v4_authorization_instructions">"Complete verification and confirmation on the official page. Authorisation is then imported and securely stored on this device."</string>
+    <string name="v4_retry_import">"Retry import"</string>
+    <string name="v4_get_authorization">"Obtain v4 authorisation"</string>
+    <string name="v4_remove_authorization">"Remove authorisation and use v3"</string>
+    <string name="v4_expires_at">"Expires: %1$s"</string>
 </resources>

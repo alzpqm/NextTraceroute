@@ -343,6 +343,8 @@ fun SettingsColumn(
                 )
             }
 
+            V4AuthorizationSettings()
+
             SettingsSection(
                 title = resources.getString(R.string.advanced_services),
                 supportingText = resources.getString(R.string.advanced_description)

@@ -67,7 +67,7 @@
     <string name="dns_mode">"查詢模式"</string>
     <string name="dns_server">"UDP／TCP DNS 伺服器"</string>
     <string name="advanced_services">"進階服務設定"</string>
-    <string name="advanced_description">"一般情況不需修改；NextTrace 預設不需自行提供 API Token。"</string>
+    <string name="advanced_description">"以下主機設定供 v3 使用；v4 授權僅送往 NextTrace 官方服務。"</string>
     <string name="pow_host">"PoW 主機名稱"</string>
     <string name="pow_dns">"PoW DNS 名稱或 IP"</string>
     <string name="api_host">"API 主機名稱"</string>
@@ -77,5 +77,18 @@
     <string name="native_v4_unavailable">"此裝置無法執行 IPv4 ping，IPv4 追蹤可能無法完成。"</string>
     <string name="native_v6_unavailable">"此裝置無法執行 IPv6 ping，IPv6 追蹤可能無法完成。"</string>
     <string name="native_both_unavailable">"此裝置無法執行 IPv4／IPv6 ping，無法探測路由。"</string>
-    <string name="about_text">"NextTraceroute %1$s\n使用 NextTrace API 的 Android 路由追蹤應用程式\n相容 NextTrace 核心／API v%2$s\n\nCopyright © 2024–2026 surfaceocean\n維護專案：https://github.com/alzpqm/NextTraceroute\n上游專案：https://github.com/nxtrace/NextTraceroute\n\n本程式為自由軟體，依 GNU 通用公眾授權條款第三版或更新版本發佈，可依條款重新散布或修改。不提供任何擔保，包括適售性或特定用途適用性的默示擔保。完整授權條款請見專案 LICENSE 檔案及 https://www.gnu.org/licenses/。\n\n預設 NextTrace API 由第三方營運，本專案不保證其可用性、效能或資料正確性。可在設定中自訂服務位址。\n\n使用的函式庫與授權：\ndnsjava：BSD 3-Clause\nseancfoley/IPAddress、square/okhttp、gson、androidx：Apache 2.0\nslf4j-android：MIT\n詳見專案 LICENSE 檔案。"</string>
+    <string name="about_text">"NextTraceroute %1$s\n使用 NextTrace API 的 Android 路由追蹤應用程式\n探測相容性基線 v%2$s\nIP 地理位置及路線標註資料由 NextTrace 官方 API 提供\nhttps://www.nxtrace.org/\n\nCopyright © 2024–2026 surfaceocean\n維護專案：https://github.com/alzpqm/NextTraceroute\n上游專案：https://github.com/nxtrace/NextTraceroute\n\n本程式為自由軟體，依 GNU 通用公眾授權條款第三版或更新版本發佈，可依條款重新散布或修改。不提供任何擔保，包括適售性或特定用途適用性的默示擔保。完整授權條款請見專案 LICENSE 檔案及 https://www.gnu.org/licenses/。\n\n預設 NextTrace API 由第三方營運，本專案不保證其可用性、效能或資料正確性。可在設定中自訂服務位址。\n\n使用的函式庫與授權：\ndnsjava：BSD 3-Clause\nseancfoley/IPAddress、square/okhttp、gson、androidx：Apache 2.0\nslf4j-android：MIT\n詳見專案 LICENSE 檔案。"</string>
+    <string name="v4_authorization_title">"NextTrace v4 授權"</string>
+    <string name="v4_authorization_loading">"正在讀取授權…"</string>
+    <string name="v4_not_configured">"尚未設定 v4 授權，目前使用 v3。"</string>
+    <string name="v4_authorization_ready">"已啟用 v4。"</string>
+    <string name="v4_authorization_expired">"v4 授權無效或已到期，請在設定重新取得授權。"</string>
+    <string name="v4_quota_exhausted">"v4 查詢額度已用盡，請查看官方授權頁的額度資訊。"</string>
+    <string name="v4_authorization_failed">"無法驗證或儲存授權，請重試匯入。"</string>
+    <string name="v4_authorizing">"正在驗證並安全儲存授權…"</string>
+    <string name="v4_authorization_instructions">"完成官網驗證及確認後，授權會自動匯入並安全儲存在此裝置。"</string>
+    <string name="v4_retry_import">"重試匯入"</string>
+    <string name="v4_get_authorization">"取得 v4 授權"</string>
+    <string name="v4_remove_authorization">"移除授權並使用 v3"</string>
+    <string name="v4_expires_at">"到期時間：%1$s"</string>
 </resources>

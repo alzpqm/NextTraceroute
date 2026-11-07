@@ -1,0 +1,1 @@
+Add optional NextTrace API v4 with automatic credential import after verification on the official page, encrypted storage, and explicit expiry and quota errors.

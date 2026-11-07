@@ -31,8 +31,9 @@
 
 ## NextTrace 後端
 
-- 客戶端已對齊 NextTrace core/API `v1.7.2`。
+- App 的核心相容性標示及 User-Agent 版本為 `1.7.2`；API 協定版本另計，不代表載入官方核心程式。
 - 使用 legacy v3 WebSocket / PoW API 流程；預設不需要使用者 API token。
+- 2026-11-08 查核：官方核心穩定版 v1.7.6 支援可選 v4 HTTP GeoIP；無 v4 token 時仍選 v3。本 App 0.2.6 尚未實作 v4，詳見 `docs/API_AUDIT_2026-11-08.md`。
 - 不應重新加入會誤導一般使用者的 API token 設定，除非未來後端協定明確要求。
 
 ## 測試環境
@@ -48,7 +49,26 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-10-29，追蹤結果排版修復）
+## 目前工作（2026-11-08，0.3.0 API v4 升級進行中）
+
+- 使用者要求升級並自動取得 v4 授權。已實作 0.3.0／versionCode 25 開發版：固定官方 HTTP v4 查詢、官網 WebView 授權畫面、驗證後自動匯入、AndroidKeyStore 加密及 noBackupFilesDir 保存。
+- 官方公開領取頁需要 Turnstile 人機驗證；本 App 不繞過或自動操作驗證，不做背景反覆領取或自動續期。授權頁成功後讀取官網 localStorage record，再由官方 status endpoint 驗證後保存；此流程仍需使用者完成官網驗證及確認。
+- 無授權才使用 v3；已設定但失效、到期、解密失敗或 429 時不靜默切回 v3。v4 不初始化 v3 PoW／WebSocket；401／429 明確提示，其餘遠端查詢當輪失敗後停止繼續請求。保留本地位址分類及獨立地圖路徑。
+- WebView 僅允許官方來源與 Cloudflare 驗證資源、不開 JavaScript bridge、禁用檔案／內容存取、禁止截圖、退出清除網頁暫存；WebView 資料也排除備份與移轉。隱私政策及中英文介面已同步更新。
+- 本機 37 項 JVM 測試及 lint／Debug APK／androidTest APK 建置已通過。API 37／16 KB 模擬器 22 項回歸通過，最後加入授權畫面常亮旗標後再跑 2 項授權測試亦通過。
+- 本輪已依型號核對指定 OnePlus Android 14；首次 22 項有 1 項語言測試因鎖定畫面未取得 Compose hierarchy，其餘 21 項通過。使用者解鎖後，語言及授權 3 項補測取得 OK (3 tests)；不可將首次整套結果稱為全通過。未操作另一支手機。
+- 新增 opt-in `V4LiveAuthorizationTest`，只有 instrumentation 參數 `v4Live=true` 才驗證使用者實際取得的授權及一次公開 DNS 位址查詢；使用者已在指定 OnePlus 完成官網驗證並確認自動返回設定、顯示 v4 已啟用；隨後取得 OK (1 test)，驗證實際授權狀態及一次 GeoIP 查詢。token 未輸出、未複製至電腦或寫入專案。
+- 正式版仍為 0.2.6；本輪準備推送及簽署，發布前仍須驗證來源、作者、產物及 Release；尚未發布。原有 `scripts/privacy-scan.sh` mode-only 變更保留；前輪 API 檢查文件／接手變更保留並將一併整理。
+
+### 前輪工作（2026-11-08，API v4 檢查）
+
+- 已核對官方 v1.7.6 文件及 v3／v4 原始碼，確認 v4 使用 GET HTTP 及 `X-NextTrace-Token`，無 v4 token 時官方核心仍選 v3；v4 錯誤不自動回退 v3。
+- 追加上游政策查核：官方網站公告標示 2026-08-22 已調整 v3 單次驗證授權所需 credits，未列數值、QPS 或資料品質降幅；2026-08-06 的第三方 API 使用說明另有 30 日過渡期及授權確認要求。未找到 v3 全面停用的固定日期；可連線不代表沒有服務條件限制。已在 API 檢查報告補上原文及日期界線。
+- 現行 v3 經主機端獨立測試完成 challenge、submit、WebSocket 升級與一次地理資訊查詢；v4 無 token 回傳 401。此結果不是 Android 實機回歸，也不代表 v4 有效 token 已驗證。
+- 使用者貼出的 `nexttrace -x` 提示未包含 token，暫存檔只屬於原命令列環境，不能視為 Android 已支援 v4。本輪僅更新檢查報告及接手紀錄，正式版仍為 0.2.6；未變更 API 功能、提交、推送或發布。
+- DeepSeek 完成一次匿名化文字覆核；其他模型未透過目前受限的既有入口調用。具體限制、usage、回執及採納理由記在私人接手檔。原有 `scripts/privacy-scan.sh` mode-only 變更保留。
+
+### 前輪工作（2026-10-29，追蹤結果排版修復）
 
 - 修正長 IPv6 位址耗盡結果列空間、使 AS 編號逐字換行或消失的問題。欄位依可用寬度自動換列，完整顯示位址並保留各欄點按及長按；較長主機名稱與延遲欄位同樣受惠。
 - 0.2.6／versionCode 24 已簽署並正式發布為 latest。歷史 Release、APK／AAB 與標籤均保留。
@@ -136,6 +156,15 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-11-08，0.3.0 準備：本機 testDebugUnitTest／lintDebug／assembleDebug／assembleDebugAndroidTest 通過，37 項 JVM 測試、lint 0 errors、13 項既有 warnings。涵蓋固定標頭與 GET、401／429、跨來源重新導向拒絕、回應上限、socket 取消、授權格式及來源驗證。
+- 2026-11-08：API 37／16 KB 模擬器取得 OK (22 tests)，最後加入授權畫面常亮旗標後 2 項安全測試再通過；OnePlus Android 14 初輪 21 項通過／1 項受鎖定影響失敗，使用者解鎖後語言與授權取得 OK (3 tests)。授權資料測試使用獨立測試檔案，確認 AES-GCM 密文及損壞狀態不默認使用 v3。
+- 2026-11-08：使用者在 OnePlus Debug App 官方頁面完成 Turnstile 驗證及確認，回覆已自動返回且 v4 已啟用。opt-in V4LiveAuthorizationTest 取得 OK (1 test)，確認本機匯入授權通過官方 status 及一次實際 GeoIP。測試過程未擷取或傾印授權頁，未讀出／記錄 token。正式 App 的既有資料及授權不受 Debug 套件測試影響。
+- 2026-11-08：推送前檢查 88 份可公開文字檔，私人身分與路徑、私鑰、token、非允許 email、簽署檔名及同步副本均無阻擋項目；GitHub Secret Scanning 為 0 open alerts。測試中的使用者資訊偽裝 URL 原先觸發 email 樣式，已以字串組合保留同一安全測試並重新通過 37 項 JVM 測試與 lint。正式產物及發布中繼資料仍需另驗。
+
+- 2026-11-08：補查官方網站公告（提交 `b505ac77f7ecdd7f5e598ebbfc1fff84bfb8522e`）、公告修改紀錄、核心與 dev Release、相關 PR 及 Discussions；已區分 v3 credits 調整、第三方服務授權及 2027 年 CLI 模式切換，未把它們誤作全面停用時間表。本次未重新取得 token 或重跑前輪已完成的連線測試。
+- 2026-11-08：主機端使用 App 預設 SNI／API DNS 路由及 User-Agent，TLS 驗證開啟；v3 challenge／submit 均為 HTTP 200，WebSocket 為 101，單次公開服務位址的 GeoIP 回覆位址相符且有 AS 欄位。僅記錄去敏結果，不保存 token 或原始 challenge。v4 無 token 回傳 401／JSON error；有效 token、配額與到期行為尚未測試。
+- 2026-11-08：本輪僅新增 API 檢查文件及更新接手紀錄，未修改 App 或執行新的 Android 建置／裝置測試；不得沿用舊測試宣稱已完成 v4 回歸。文件空白檢查與 79 份可公開文字檔的來源隱私樣式掃描通過，未發現本機身分、私人路徑、私鑰、token 或非允許 email。
 
 - 2026-10-29，0.2.6 發布：GitHub Actions run `40762078499` 在 `96cfb27` 成功完成正式建置、測試、lint、來源與產物隱私掃描。另於本機掃描 APK 的 153 個及 AAB 的 162 個非空項目，檢查 UTF-8／UTF-16LE、本機身分及路徑、私人 email、私鑰和 token 樣式，未發現阻擋項目；GitHub Secret Scanning 為 0 open alerts。
 - 2026-10-29：APK／AAB 驗章成功且憑證與既有正式版一致，APK 的 package、0.2.6／code 24、minSdk 26、targetSdk 37 與 16 KB 對齊通過。AAB 仍有自簽憑證、無 timestamp 及串流 manifest 順序等既有提示；未驗證 Google Play 上傳。

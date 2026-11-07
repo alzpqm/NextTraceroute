@@ -39,6 +39,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
@@ -288,7 +289,7 @@ class TracerouteHandler {
     }
 
     @Composable
-    fun MainWSHandler(
+    internal fun MainWSHandler(
         threadMutex: Mutex,
         tracerouteThreadsIntList: MutableList<Int>,
         scope: CoroutineScope,
@@ -299,8 +300,13 @@ class TracerouteHandler {
         currentLanguage: MutableState<String>,
         traceMapThreadsMapList: MutableList<List<MutableMap<String, Any?>>>,
         insertion: MutableState<String>,
-        isAPIFinished: MutableState<Boolean>
+        isAPIFinished: MutableState<Boolean>,
+        v4Authorization: MutableState<V4Grant?>? = null,
+        authorizationReady: MutableState<Boolean>? = null,
+        apiStatus: MutableState<String>? = null
     ) {
+        val context = LocalContext.current
+        val resources = LocalResources.current
         LaunchedEffect(Unit) {
             scope.launch(Dispatchers.Main.immediate) {
                 val id = Random.nextInt(1, Int.MAX_VALUE)
@@ -308,6 +314,13 @@ class TracerouteHandler {
                 var session: GeoApiSession? = null
                 val backendDeadline = SystemClock.elapsedRealtime() + 25_000
                 try {
+                    val grant = if (v4Authorization != null) withContext(Dispatchers.IO) {
+                        V4TokenStore(context).load()
+                    } else null
+                    v4Authorization?.value = grant
+                    authorizationReady?.value = true
+                    val v4Client = if (grant != null) NextTraceV4Client() else null
+                    var v4Blocked = false
                     while (true) {
                         val targetIndex = gridDataList.indexOfFirst { it[0][1].value == insertion.value }
                             .let { if (it < 0) gridDataList.lastIndex else it }
@@ -319,6 +332,20 @@ class TracerouteHandler {
                             val data = if (reserved.isNotEmpty()) {
                                 parseGeoResponse(Gson().toJson(mapOf("ip" to ip, "asnumber" to reserved,
                                     "whois" to reserved)), ip)
+                            } else if (grant != null) {
+                                if (v4Blocked) null else try {
+                                    v4Client!!.lookup(ip, grant)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (error: Exception) {
+                                    v4Blocked = true
+                                    apiStatus?.value = resources.getString(when ((error as? V4ApiException)?.status) {
+                                        401 -> R.string.v4_authorization_expired
+                                        429 -> R.string.v4_quota_exhausted
+                                        else -> R.string.location_unavailable
+                                    })
+                                    null
+                                }
                             } else {
                                 val ready = apiToken.value.isNotBlank() && preferredAPIIp.value.isNotBlank()
                                 if (!ready && SystemClock.elapsedRealtime() < backendDeadline) continue
@@ -568,6 +595,8 @@ class TracerouteHandler {
         ) {
 
         val inputType = remember(insertion.value) { identifyInput(insertion.value) }
+        val v4Authorization = remember { mutableStateOf<V4Grant?>(null) }
+        val authorizationReady = remember { mutableStateOf(false) }
         //pingPlaceText.value= testNativePing()
         val lastHopCursor = remember(insertion.value) { mutableIntStateOf(114514) }
         val nativeStatus = remember(insertion.value, maxTTL.intValue) {
@@ -683,31 +712,34 @@ class TracerouteHandler {
                 }
             }
 
-            //api handler
-            APIPOWHandler(
-                scope = scope, threadMutex = threadMutex,
-                tracerouteThreadsIntList = tracerouteThreadsIntList,
-                tracerouteDNSServer = tracerouteDNSServer,
-                preferredAPIIpPOW = preferredAPIIpPOW, testAPIText = testAPIText,
-                apiHostNamePOW = apiHostNamePOW,
-                apiDNSNamePOW = apiDNSNamePOW,
-                apiDNSListPOW = apiDNSListPOW,
-                apiToken = apiToken,
-                currentDOHServer = currentDOHServer,
-                currentDNSMode = currentDNSMode
-            )
-            APIDNSHandler(
-                scope = scope, threadMutex = threadMutex,
-                tracerouteThreadsIntList = tracerouteThreadsIntList,
-                tracerouteDNSServer = tracerouteDNSServer,
-                preferredAPIIp = preferredAPIIp, //testAPIText = testText,
-                apiHostName = apiHostName,
-                apiDNSName = apiDNSName,
-                apiDNSList = apiDNSList,
-                apiToken = apiToken,
-                currentDNSMode = currentDNSMode,
-                currentDOHServer = currentDOHServer
-            )
+            // v4 mode never initializes the v3 PoW or WebSocket probing path.
+            if (authorizationReady.value && v4Authorization.value == null) {
+                //api handler
+                APIPOWHandler(
+                    scope = scope, threadMutex = threadMutex,
+                    tracerouteThreadsIntList = tracerouteThreadsIntList,
+                    tracerouteDNSServer = tracerouteDNSServer,
+                    preferredAPIIpPOW = preferredAPIIpPOW, testAPIText = testAPIText,
+                    apiHostNamePOW = apiHostNamePOW,
+                    apiDNSNamePOW = apiDNSNamePOW,
+                    apiDNSListPOW = apiDNSListPOW,
+                    apiToken = apiToken,
+                    currentDOHServer = currentDOHServer,
+                    currentDNSMode = currentDNSMode
+                )
+                APIDNSHandler(
+                    scope = scope, threadMutex = threadMutex,
+                    tracerouteThreadsIntList = tracerouteThreadsIntList,
+                    tracerouteDNSServer = tracerouteDNSServer,
+                    preferredAPIIp = preferredAPIIp, //testAPIText = testText,
+                    apiHostName = apiHostName,
+                    apiDNSName = apiDNSName,
+                    apiDNSList = apiDNSList,
+                    apiToken = apiToken,
+                    currentDNSMode = currentDNSMode,
+                    currentDOHServer = currentDOHServer
+                )
+            }
 
 
             MainWSHandler(
@@ -722,6 +754,9 @@ class TracerouteHandler {
                 traceMapThreadsMapList = traceMapThreadsMapList,
                 isAPIFinished = isAPIFinished,
                 insertion = insertion,
+                v4Authorization = v4Authorization,
+                authorizationReady = authorizationReady,
+                apiStatus = testAPIText
             )
 
 
@@ -737,7 +772,7 @@ class TracerouteHandler {
                                 .distinctBy { it[0]["Address"] }
                                 .sortedBy { it[0]["TTL"] as? Int ?: 0 }
                             if (hops.isEmpty()) return@launch
-                            val host = apiHostName.value
+                            val host = if (v4Authorization.value != null) "api.nxtrace.org" else apiHostName.value
                             val backendIp = preferredAPIIp.value
                             val url = withContext(Dispatchers.IO) {
                                 val builder = OkHttpClient.Builder()
