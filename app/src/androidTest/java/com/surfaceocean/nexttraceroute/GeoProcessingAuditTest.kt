@@ -36,7 +36,6 @@ class GeoProcessingAuditTest {
         val host = mutableStateOf("localhost:${server.localPort}")
         val backendIp = mutableStateOf("127.0.0.1")
         val token = mutableStateOf("synthetic-audit-token")
-        val language = mutableStateOf("en")
         val insertion = mutableStateOf("1.1.1.1")
         val mutex = Mutex()
         val jobs = mutableListOf<Int>()
@@ -48,7 +47,7 @@ class GeoProcessingAuditTest {
                     threadMutex = mutex, tracerouteThreadsIntList = jobs,
                     scope = rememberCoroutineScope(),
                     apiHostName = host, preferredAPIIp = backendIp, apiToken = token,
-                    gridDataList = rows, currentLanguage = language,
+                    gridDataList = rows,
                     traceMapThreadsMapList = traceMap,
                     insertion = insertion, isAPIFinished = finished
                 )

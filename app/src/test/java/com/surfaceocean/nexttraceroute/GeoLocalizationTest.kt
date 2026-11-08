@@ -39,26 +39,27 @@ class GeoLocalizationTest {
     @Test fun aliasesRespectCountryContextAndNeverChangeTechnicalNamesOrRawJson() {
         val data = geo("""{"country":"US","city":"Singapore","domain":"HongKong.Example.net","owner":"Macau","whois":"Singapore"}""")
         val before = data.toString()
-        assertEquals("美國 Singapore HongKong.Example.net", formatGeoLocation(data, GeoLanguage.CHINESE))
+        assertEquals("美國 HongKong.Example.net", formatGeoLocation(data, GeoLanguage.CHINESE))
         assertEquals(before, data.toString())
     }
 
-    @Test fun unknownPlacesAndMissingTranslationsAreRetained() {
+    @Test fun unavailableTranslationsDoNotIntroduceAnotherLanguage() {
         val data = geo("""{"country":"Unlisted country","prov":"Unlisted province","city":"Unlisted city"}""")
-        assertEquals("Unlisted country Unlisted province Unlisted city", formatGeoLocation(data, GeoLanguage.CHINESE))
+        val original = data.toString()
+        assertEquals("Unlisted country Unlisted province Unlisted city", formatGeoLocation(data, GeoLanguage.ENGLISH))
+        assertEquals("*", formatGeoLocation(data, GeoLanguage.CHINESE))
+        assertEquals(original, data.toString())
         assertEquals("*", formatGeoLocation(geo("""{"country":null,"city":"*"}"""), GeoLanguage.CHINESE))
     }
 
-    @Test fun defaultFollowsAppAndExplicitSettingOverridesItIndependentlyOfSystemLocale() {
+    @Test fun languageFollowsAppIndependentlyOfSystemLocale() {
         val original = Locale.getDefault()
         try {
             Locale.setDefault(Locale.UK)
-            assertEquals(GeoLanguage.CHINESE, resolveGeoLanguage("Default", "zh-Hant"))
+            assertEquals(GeoLanguage.CHINESE, resolveGeoLanguage("zh-Hant"))
             Locale.setDefault(Locale.TRADITIONAL_CHINESE)
-            assertEquals(GeoLanguage.ENGLISH, resolveGeoLanguage("Default", "en-GB"))
-            assertEquals(GeoLanguage.ENGLISH, resolveGeoLanguage("en", "zh-Hant"))
-            assertEquals(GeoLanguage.CHINESE, resolveGeoLanguage("zh", "en-GB"))
-            assertEquals(GeoLanguage.CHINESE, resolveGeoLanguage("invalid", "zh-Hant"))
+            assertEquals(GeoLanguage.ENGLISH, resolveGeoLanguage("en-GB"))
+            assertEquals(GeoLanguage.CHINESE, resolveGeoLanguage("invalid"))
         } finally { Locale.setDefault(original) }
     }
 }

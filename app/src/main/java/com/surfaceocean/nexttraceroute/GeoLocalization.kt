@@ -6,11 +6,8 @@ import java.util.Locale
 internal enum class GeoLanguage { CHINESE, ENGLISH }
 
 /** Resolve once per trace, using the app's locale rather than the device's locale. */
-internal fun resolveGeoLanguage(setting: String, displayLanguageTag: String): GeoLanguage = when (setting) {
-    "zh" -> GeoLanguage.CHINESE
-    "en" -> GeoLanguage.ENGLISH
-    else -> if (Locale.forLanguageTag(displayLanguageTag).language == "en") GeoLanguage.ENGLISH else GeoLanguage.CHINESE
-}
+internal fun resolveGeoLanguage(displayLanguageTag: String): GeoLanguage =
+    if (Locale.forLanguageTag(displayLanguageTag).language == "en") GeoLanguage.ENGLISH else GeoLanguage.CHINESE
 
 private data class CountryName(val code: String, val chinese: String, val english: String)
 private val chineseLocale = Locale.forLanguageTag("zh-Hant-TW")
@@ -32,7 +29,7 @@ private val countryNames: Map<String, CountryName> by lazy {
             val locale = Locale.Builder().setRegion(code).build()
             val override = regionNames.firstOrNull { it.first.code == code }?.first
             val name = override ?: CountryName(code, locale.getDisplayCountry(chineseLocale), locale.getDisplayCountry(Locale.UK))
-            for (alias in listOf(code, locale.isO3Country, locale.getDisplayCountry(Locale.UK),
+            for (alias in listOf(code, runCatching { locale.isO3Country }.getOrDefault(""), locale.getDisplayCountry(Locale.UK),
                 locale.getDisplayCountry(Locale.SIMPLIFIED_CHINESE), locale.getDisplayCountry(chineseLocale))) {
                 if (alias.isNotBlank()) put(nameKey(alias), name)
             }
@@ -49,18 +46,22 @@ internal fun formatGeoLocation(data: JsonObject, language: GeoLanguage): String 
         .filter { it.isNotBlank() }.distinct()
     fun preferred(values: List<String>): String = values.firstOrNull {
         hasHan(it) == (language == GeoLanguage.CHINESE)
-    } ?: values.firstOrNull().orEmpty()
+    }.orEmpty()
     fun CountryName.display() = if (language == GeoLanguage.CHINESE) chinese else english
 
-    val rawCountry = preferred(candidates("country"))
+    val countryCandidates = candidates("country")
+    val rawCountry = preferred(countryCandidates).ifBlank {
+        countryCandidates.firstOrNull { nameKey(it) in countryNames }.orEmpty()
+    }
     val country = countryNames[nameKey(rawCountry)]
     fun place(key: String): String {
-        val raw = preferred(candidates(key))
+        val values = candidates(key)
+        val raw = preferred(values)
         // A city called Singapore in another country is not Singapore the country.
         val alias = regionNames.firstOrNull { (name, aliases) ->
             name.code != "CN" &&
                 (country?.code == name.code || (country?.code == "CN" && name.code in listOf("HK", "MO"))) &&
-                aliases.any { nameKey(it) == nameKey(raw) }
+                aliases.any { alias -> values.any { nameKey(alias) == nameKey(it) } }
         }?.first
         return alias?.display() ?: raw
     }

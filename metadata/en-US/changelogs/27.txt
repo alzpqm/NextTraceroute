@@ -1,0 +1,1 @@
+Use the saved app display language for all trace locations. Remove the separate API language override. Fix mixed location output when a translation is missing, without changing raw map metadata or technical identifiers. Add regression tests through the real trace UI and settings lifecycle.

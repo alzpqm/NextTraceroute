@@ -186,8 +186,6 @@ class MainActivity : ComponentActivity() {
                     val currentPage = remember { mutableStateOf("main") }
                     val context = LocalContext.current
                     val resources = LocalResources.current
-                    val currentLanguage =
-                        remember { mutableStateOf("Default") } // Default, zh or en
                     val isTraceMapEnabled = remember { mutableStateOf(true) }
                     val maxTraceTTL = remember { mutableIntStateOf(30) }
                     val traceTimeout = remember { mutableStateOf("1") }
@@ -228,9 +226,6 @@ class MainActivity : ComponentActivity() {
                                     val mapType = object : TypeToken<Map<String, Any>>() {}.type
                                     val settingsMap: Map<String, Any> =
                                         gson.fromJson(jsonString, mapType)
-                                    (settingsMap["currentLanguage"] as? String)?.let {
-                                        currentLanguage.value = it
-                                    }
                                     (settingsMap["isTraceMapEnabled"] as? Boolean)?.let {
                                         isTraceMapEnabled.value = it
                                     }
@@ -299,7 +294,6 @@ class MainActivity : ComponentActivity() {
                                 SettingsColumn(
                                     context = context,
                                     currentPage = currentPage,
-                                    currentLanguage = currentLanguage,
                                     isTraceMapEnabled = isTraceMapEnabled,
                                     maxTraceTTL = maxTraceTTL,
                                     traceTimeout = traceTimeout,
@@ -347,7 +341,6 @@ class MainActivity : ComponentActivity() {
                                 )
                                 MainColumn(
                                     isSearchBarEnabled = isSearchBarEnabled,
-                                    currentLanguage = currentLanguage,
                                     isTraceMapEnabled = isTraceMapEnabled,
                                     maxTraceTTL = maxTraceTTL,
                                     traceTimeout = traceTimeout,
@@ -666,7 +659,7 @@ fun clearData(
 //@Preview(showBackground = true)
 @Composable
 fun MainColumn(
-    currentLanguage: MutableState<String>, isTraceMapEnabled: MutableState<Boolean>,
+    isTraceMapEnabled: MutableState<Boolean>,
     maxTraceTTL: MutableIntState, traceTimeout: MutableState<String>,
     traceCount: MutableState<String>, tracerouteDNSServer: MutableState<String>,
     apiHostNamePOW: MutableState<String>, apiDNSNamePOW: MutableState<String>,
@@ -866,7 +859,6 @@ fun MainColumn(
                     isSearchBarEnabled = isSearchBarEnabled,
                     isAPIFinished = isAPIFinished,
                     apiToken = apiToken,
-                    currentLanguage = currentLanguage,
                     apiDNSList = apiDNSList,
                     apiDNSListPOW = apiDNSListPOW,
                     apiDNSName = apiDNSName,

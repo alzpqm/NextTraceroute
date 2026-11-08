@@ -97,7 +97,6 @@ fun SettingsColumn(
     modifier: Modifier = Modifier,
     context: Context,
     currentPage: MutableState<String>,
-    currentLanguage: MutableState<String>,
     isTraceMapEnabled: MutableState<Boolean>,
     maxTraceTTL: MutableIntState,
     traceTimeout: MutableState<String>,
@@ -113,13 +112,10 @@ fun SettingsColumn(
     val resources = LocalResources.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val tracerouteHandler = remember { TracerouteHandler() }
-    val languageValues = listOf("Default", "zh", "en")
-    val languageLabels = listOf(resources.getString(R.string.language_system), resources.getString(R.string.language_chinese), resources.getString(R.string.language_english))
     val displayLanguageLabels = listOf(resources.getString(R.string.language_chinese), resources.getString(R.string.language_english))
     var displayLanguageIndex by remember { mutableIntStateOf(displayLanguages.indexOf(displayLanguage(context))) }
     val dnsModeValues = listOf("udp", "tcp", "doh")
 
-    var languageIndex by remember { mutableIntStateOf(0) }
     var traceMapEnabled by remember { mutableStateOf(true) }
     var maxHop by remember { mutableFloatStateOf(30f) }
     var timeout by remember { mutableFloatStateOf(1f) }
@@ -133,7 +129,6 @@ fun SettingsColumn(
     var apiDnsNameDraft by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        languageIndex = languageValues.indexOf(currentLanguage.value).coerceAtLeast(0)
         traceMapEnabled = isTraceMapEnabled.value
         maxHop = validIntegerSetting(maxTraceTTL.intValue, 30, 1..255).toFloat()
         timeout = validIntegerSetting(traceTimeout.value, 1, 1..10).toFloat()
@@ -180,7 +175,6 @@ fun SettingsColumn(
             return
         }
 
-        currentLanguage.value = languageValues[languageIndex]
         isTraceMapEnabled.value = traceMapEnabled
         maxTraceTTL.intValue = maxHop.roundToInt()
         traceTimeout.value = timeout.roundToInt().toString()
@@ -194,7 +188,6 @@ fun SettingsColumn(
         apiDNSName.value = cleanApiDns
 
         val settings = mapOf(
-            "currentLanguage" to currentLanguage.value,
             "isTraceMapEnabled" to isTraceMapEnabled.value,
             "maxTraceTTL" to maxTraceTTL.intValue.toString(),
             "traceTimeout" to traceTimeout.value,
@@ -272,13 +265,7 @@ fun SettingsColumn(
                     options = displayLanguageLabels,
                     onSelected = { displayLanguageIndex = it }
                 )
-                SettingsDivider()
-                ChoiceSetting(
-                    title = resources.getString(R.string.api_language),
-                    selectedLabel = languageLabels[languageIndex],
-                    options = languageLabels,
-                    onSelected = { languageIndex = it }
-                )
+                Text(resources.getString(R.string.location_follows_display), style = MaterialTheme.typography.bodySmall)
                 SettingsDivider()
                 Row(
                     modifier = Modifier.fillMaxWidth(),

@@ -43,7 +43,6 @@
     <string name="action_delete">"刪除"</string>
     <string name="external_missing">"沒有可開啟連結或分享結果的應用程式。"</string>
     <string name="external_forbidden">"此裝置不允許執行這項操作。"</string>
-    <string name="language_system">"跟隨介面"</string>
     <string name="language_chinese">"中文"</string>
     <string name="language_english">"英文"</string>
     <string name="dns_server_invalid">"UDP／TCP DNS 伺服器位址無效。"</string>
@@ -56,7 +55,7 @@
     <string name="settings_subtitle">"語言、網路探測與服務設定"</string>
     <string name="action_save">"儲存"</string>
     <string name="settings_general">"一般"</string>
-    <string name="api_language">"結果地區語言"</string>
+    <string name="location_follows_display">"追蹤結果的地區名稱使用相同語言。缺少譯名的欄位不混入另一種語言。"</string>
     <string name="show_map">"顯示路由地圖"</string>
     <string name="show_map_description">"追蹤完成後產生 TraceMap"</string>
     <string name="probe_settings">"探測參數"</string>

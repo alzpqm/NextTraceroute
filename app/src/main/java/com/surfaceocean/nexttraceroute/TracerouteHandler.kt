@@ -296,7 +296,6 @@ class TracerouteHandler {
         preferredAPIIp: MutableState<String>,
         apiToken: MutableState<String>,
         gridDataList: MutableList<MutableList<MutableList<MutableState<String>>>>,
-        currentLanguage: MutableState<String>,
         traceMapThreadsMapList: MutableList<List<MutableMap<String, Any?>>>,
         insertion: MutableState<String>,
         isAPIFinished: MutableState<Boolean>,
@@ -307,7 +306,7 @@ class TracerouteHandler {
         val context = LocalContext.current
         val resources = LocalResources.current
         LaunchedEffect(Unit) {
-            val geoLanguage = resolveGeoLanguage(currentLanguage.value, resources.configuration.locales[0].toLanguageTag())
+            val geoLanguage = resolveGeoLanguage(displayLanguage(context))
             scope.launch(Dispatchers.Main.immediate) {
                 val id = Random.nextInt(1, Int.MAX_VALUE)
                 threadMutex.withLock { tracerouteThreadsIntList.add(id) }
@@ -328,8 +327,9 @@ class TracerouteHandler {
                         for ((index, row) in rows.withIndex()) {
                             val ip = row[0][1].value
                             if (ip.isBlank() || ip == "*" || row[0][2].value.isNotEmpty()) continue
-                            val reserved = reservedIPFilter(ip)
-                            val data = if (reserved.isNotEmpty()) {
+                            val fixture = geoLookupFixture(ip)
+                            val reserved = if (fixture != null) "" else reservedIPFilter(ip)
+                            val data = if (fixture != null) fixture else if (reserved.isNotEmpty()) {
                                 parseGeoResponse(Gson().toJson(mapOf("ip" to ip, "asnumber" to reserved,
                                     "whois" to reserved)), ip)
                             } else if (grant != null) {
@@ -578,7 +578,6 @@ class TracerouteHandler {
         isSearchBarEnabled: MutableState<Boolean>,
         isAPIFinished: MutableState<Boolean>,
         apiToken: MutableState<String>,
-        currentLanguage: MutableState<String>,
         apiHostNamePOW: MutableState<String>,
         apiDNSNamePOW: MutableState<String>,
         preferredAPIIpPOW: MutableState<String>,
@@ -708,7 +707,7 @@ class TracerouteHandler {
             }
 
             // v4 mode never initializes the v3 PoW or WebSocket probing path.
-            if (authorizationReady.value && v4Authorization.value == null) {
+            if (authorizationReady.value && v4Authorization.value == null && !hasGeoLookupFixture()) {
                 //api handler
                 APIPOWHandler(
                     scope = scope, threadMutex = threadMutex,
@@ -745,7 +744,6 @@ class TracerouteHandler {
                 preferredAPIIp = preferredAPIIp,
                 apiToken = apiToken,
                 gridDataList = gridDataList,
-                currentLanguage = currentLanguage,
                 traceMapThreadsMapList = traceMapThreadsMapList,
                 isAPIFinished = isAPIFinished,
                 insertion = insertion,

@@ -33,8 +33,8 @@ class GeoLocalizationDeviceTest {
             Locale.setDefault(systemLocale)
             prefs.edit().putString(DISPLAY_LANGUAGE_KEY, appLanguage).commit()
             val resources = localizedContext(context).resources
-            val language = resolveGeoLanguage("Default", resources.configuration.locales[0].toLanguageTag())
-            assertEquals(if (appLanguage == "en-GB") "Follow display language" else "跟隨介面", resources.getString(R.string.language_system))
+            val language = resolveGeoLanguage(displayLanguage(context))
+            assertEquals(appLanguage, resources.configuration.locales[0].toLanguageTag())
             val rows = samples.map { formatGeoLocation(parseGeoResponse(it, "192.0.2.1")!!, language) }
             assertEquals(expected, rows)
             var copied = ""

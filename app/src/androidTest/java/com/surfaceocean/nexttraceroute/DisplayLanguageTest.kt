@@ -14,14 +14,14 @@ import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
-class DisplayLanguageRule : TestRule {
+class DisplayLanguageRule(private val tag: String = "zh-Hant") : TestRule {
     override fun apply(base: Statement, description: Description) = object : Statement() {
         override fun evaluate() {
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             check(context.packageName.endsWith(".debug"))
             val preferences = context.getSharedPreferences(DISPLAY_LANGUAGE_PREFS, Context.MODE_PRIVATE)
             val original = preferences.getString(DISPLAY_LANGUAGE_KEY, null)
-            preferences.edit().putString(DISPLAY_LANGUAGE_KEY, "zh-Hant").commit()
+            preferences.edit().putString(DISPLAY_LANGUAGE_KEY, tag).commit()
             try {
                 base.evaluate()
             } finally {
