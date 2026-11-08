@@ -9,7 +9,7 @@
 - 上游：`origin` → `https://github.com/nxtrace/NextTraceroute.git`
 - 維護 Fork：`fork` → `https://github.com/alzpqm/NextTraceroute.git`
 - 目前開發分支：`codex/nexttrace-1.7.2-ui`
-- 目前穩定版：`v0.3.1`，release commit `7f7622c`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.3.1`。
+- 目前穩定版：`v0.3.2`，release commit `d380a79`，GitHub Release：`https://github.com/alzpqm/NextTraceroute/releases/tag/v0.3.2`。
 - 發佈與提交只能使用 GitHub 帳號名稱，以及 GitHub 提供的 noreply email；不可出現真名或真實 email。
 - 每次 push、tag 或 GitHub Release 前都必須完成隱私掃描。發現本機使用者名稱、絕對路徑、裝置序號、PIN、Token、密碼、私鑰、keystore、真實姓名或真實 email 時禁止發佈。
 - 隱私掃描必須涵蓋工作樹、待推送 commits、tag/commit 作者資料、APK/AAB 簽章憑證與 Release 中繼資料；掃描結果須更新在本檔。
@@ -25,8 +25,8 @@
 - `targetSdk = 37`
 - `minSdk = 26`（Android 8.0；舊於此版本不支援）
 - Java / Kotlin JVM target：21
-- 現行正式版：`versionName = 0.3.1`、`versionCode = 26`。
-- 後續公開版本必須高於 0.3.1，不可重複既有版本號或造成比原版更舊的觀感。
+- 現行正式版：`versionName = 0.3.2`、`versionCode = 27`。
+- 後續公開版本必須高於 0.3.2，不可重複既有版本號或造成比原版更舊的觀感。
 - UI 基線：Jetpack Compose + Material 3，需兼顧 Android 17 / API 37 的設計與行為。
 
 ## NextTrace 後端
@@ -49,13 +49,15 @@
   - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
   - 測試輸入、清除、IME 動作、鍵盤開合、旋轉、深色模式與實際路由追蹤。
 
-## 目前工作（2026-11-08，0.3.2 結果語言修復）
+## 目前工作（2026-11-08，0.3.2 結果語言修復已發布）
 
 - 使用者確認版本為 0.3.1、結果地區語言選中文，仍提供中英文混用的新截圖。已查到 0.3.1 在缺少目標語言值時，仍會 fallback 到另一語言；前輪測試只呼叫 formatter 再顯示結果列，沒有覆蓋保存設定到實際追蹤的完整路徑。
 - 主機端以官方 v3 流程取得一次暫時授權，核對三筆截圖涉及的地區資料，只輸出去敏的雙語地區欄位。維也納的英文城市欄位確為空值，英文省名則為 Vienna，會觸發另一語言城市補值；美國與荷蘭樣本雙語欄位完整。token 僅存在程序記憶體、未顯示或保存，真實路由位址不寫入公開來源。
 - 先新增測試再修正：0.3.1 formatter 的 2 項 JVM 斷言均失敗；補上 Debug 專用資料來源後，3 項真實首頁／追蹤整合測試有 2 項因獨立語言覆蓋而失敗、1 項保存中文設定的測試通過。受控模擬器未完整重現使用者「已選中文卻偏英文」的手機狀態，不將舊設定衝突當成已確認的使用者操作。
 - 0.3.2／code 27 移除獨立 API／結果語言選項與舊值讀寫，直接從 App 保存的介面語言選擇決定每輪結果；不再依系統 Locale 或另一份 API 設定。缺譯名欄位不跨語言補值；原始雙語 metadata 保留於地圖資料，技術識別文字維持原文。
-- 46 項 JVM 測試、lint 0 errors／13 項既有 warnings、Debug 與 androidTest APK 已通過；API 37／16 KB 模擬器完整回歸取得 OK (25 tests)。新測試以回環追蹤走過 MainActivity、設定檔、Activity 重建、MainWSHandler 與實際結果列；正式版資料來源函式固定回傳空值，沒有可設定的 fixture 物件。正式簽署及發布核對仍待完成。
+- 46 項 JVM 測試、lint 0 errors／13 項既有 warnings、Debug 與 androidTest APK 已通過；API 37／16 KB 模擬器完整回歸取得 OK (25 tests)。新測試以回環追蹤走過 MainActivity、設定檔、Activity 重建、MainWSHandler 與實際結果列；中文／英文受控結果畫面已視覺核對。正式版資料來源函式固定回傳空值，已驗證 APK／AAB 不含可設定的 fixture 物件與整合測試類別。
+- 0.3.2 已正式發布為 latest，tag 指向 `d380a79`；GitHub Actions run `42430310099` 成功完成正式建置、測試、lint、簽署與隱私掃描。來源 99 份可公開文字檔、匿名 commit／tag、憑證、產物及 Release 中繼資料均通過，三個資產遠端 digest 與本機一致，歷史版本全部保留。
+- 正式版 0.3.1 → 0.3.2 在 API 37／16 KB 模擬器覆蓋升級，首次開啟前既有設定及歷史資料庫 SHA-256 相同；冷啟動正常、目前 PID 無 AndroidRuntime fatal。本輪未連接指定 OnePlus，未宣稱實機驗證，未更動實體手機 App 或授權。
 - DeepSeek 延續原對話完成一次匿名化覆核，採納禁止逐欄跨語言補值與真實入口回歸；未採用會把整組結果改回其他語言或臆補地名的方案。Gemini／Claude 的既有整合與到期限制未變，本次未呼叫。成功回執、usage、取捨及主驗證保存於私人接手檔。原有 `scripts/privacy-scan.sh` mode-only 變更保留、不納入提交。
 
 ### 前輪工作（2026-11-08，0.3.1 結果地區語言修復已發布）
@@ -177,6 +179,11 @@
 - 0.2.2 正式版已發佈；APK、AAB 與 `SHA256SUMS.txt` 均已上傳，GitHub 遠端雜湊完成核對。後續公開版本必須高於 0.2.2。
 
 ## 驗證紀錄
+
+- 2026-11-08，0.3.2 發布：GitHub Actions run `42430310099` 在 `d380a79` 完成正式簽署及全部 CI 檢查。來源 99 份可公開文字檔與匿名 commit／tag 通過；本機逐項掃描 APK 153 個與 AAB 162 個非空 ZIP entries 的 ASCII／UTF-16LE，無私人路徑、身分、私人 email、私鑰或 token 樣式，Secret Scanning 為 0 open alerts。正式 DEX 不含 Debug 專用可設定 GeoLookupFixture 物件與整合測試類別。
+- 2026-11-08：APK／AAB 驗章通過，憑證 `CN=alzpqm, O=alzpqm`、SHA-256 `b31af4586d6222c20bfaf0af6b6359023818714ddf57b022fdea67e115d223a9` 與既有正式版一致；package、0.3.2／code 27、minSdk 26、targetSdk 37 及 16 KB zipalign 正確。AAB 保留自簽、無 timestamp 及串流 manifest 順序等既有提示；未驗證 Google Play 上傳。
+- 2026-11-08：模擬器正式版由 0.3.1 直接覆蓋升級至 0.3.2，首次開啟前設定與歷史資料庫雜湊不變，冷啟動正常且目前 PID 無 AndroidRuntime fatal。本輪未測手機正式包升級、真實 v4 連線或重新領取授權。
+- 2026-11-08：APK SHA-256 `f1e175607968856673724e947007d4962c6b9636f96c91d7977fccd4175b244c`；AAB `9b0756375cc93f0006210fe5c146e97d19622327b12d776c3429eec7fd1439f4`；SHA256SUMS 檔 `84ce63cb5da89408bcebf1bb5777835c01602f5686f86a1529ccd812f8110740`。草稿及發布後三個 GitHub assets digest 均與本機一致，版本說明一致，Release 作者／上傳者為匿名 GitHub 帳號，非 draft／prerelease 且為 latest，tag 指向 `d380a79`。
 
 - 2026-11-08，0.3.2：新增 2 項 JVM 測試在 0.3.1 上均失敗，修正後全套 46 項 JVM 通過；lint 0 errors／13 項既有 warnings，Debug 與 androidTest APK 建置成功。新增 3 項整合測試使用真實 MainActivity／追蹤流程與 Debug 專用 GeoIP fixture，舊邏輯為 1 項通過、2 項失敗；修正後完整模擬器回歸 OK (25 tests)，包含保存中文、舊英文 API 值與中文介面衝突，以及英文介面缺英文城市等條件。未使用真實 token 或路由位址作為測試 fixture。
 - 2026-11-08：主機端官方 API 樣本確認維也納英文城市為空，而省名英文為 Vienna；實際用戶已回覆 0.3.1／中文選項。受控模擬器未完整重現其已選中文仍偏英文的手機狀態，不宣稱已在該手機重現或驗證；本次直接統一保存語言來源，移除獨立覆蓋路徑，並以真實追蹤流程驗證。Android 測試畫面僅含回環與合成 GeoIP 資料。
